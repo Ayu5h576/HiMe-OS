@@ -1,32 +1,50 @@
-# React + TypeScript + Vite
+# HiMe OS
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+HiMe OS is a premium AI operating system concept built to make everyday device interaction feel natural, proactive, and intelligent. It is designed as an AI-first layer that can coordinate apps, services, and connected devices through a unified experience.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+HiMe OS focuses on three core ideas:
 
-## React Compiler
+- **AI-native interaction** — communicate through intent, not menus.
+- **Device coordination** — connect and orchestrate apps, phones, speakers, TVs, and other smart surfaces.
+- **Context-aware assistance** — remember what matters and respond based on the situation.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## What HiMe OS is for
 
-## Expanding the Oxlint configuration
+HiMe OS is meant to be the control layer for a modern personal ecosystem. Instead of treating each app or device separately, it aims to bring them together under one intelligent interface.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Core capabilities
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+- Natural-language commands and assistant-style workflows
+- Cross-app control and automation
+- Connected device orchestration
+- Memory-aware assistance
+- Personalized recommendations and shortcuts
+- Clean premium UI for daily use
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Experience principles
+
+- Fast to understand
+- Simple to use
+- Visually refined
+- Adaptive across devices
+- Built around user intent
+
+## Project status
+
+This repository currently serves as the foundation for the HiMe OS concept and implementation.
+
+## Tech stack
+
+The project is built with:
+
+- React
+- TypeScript
+- Vite
+
+## Getting started
+
+```bash
+npm install
+npm run dev
