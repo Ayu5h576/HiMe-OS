@@ -329,11 +329,7 @@ The objective is to provide one unified interface for productivity, automation, 
 
 # Screenshots
 
-## Landing Page
 
-![Landing Page](docs/images/landing-page.png)
-
----
 
 ## Dashboard
 
