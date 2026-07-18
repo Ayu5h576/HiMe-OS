@@ -327,6 +327,24 @@ The objective is to provide one unified interface for productivity, automation, 
 
 ---
 
+# Screenshots
+
+## Landing Page
+
+![Landing Page](docs/images/landing-page.png)
+
+---
+
+## Dashboard
+
+![Dashboard](docs/images/Dashboard.png)
+
+---
+
+## AI Chat
+
+![AI Chat](docs/images/ai-chat.png)
+
 # Contributing
 
 Contributions, feature requests, and suggestions are welcome.
