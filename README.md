@@ -1,138 +1,117 @@
 # HiMe OS
 
 <p align="center">
-  <h3 align="center">Your Personal AI Operating System</h3>
+  <h3 align="center">One AI. Every Device. One Memory.</h3>
+
   <p align="center">
-    An AI-powered operating system that unifies your digital life across your computer, phone, cloud services, and future smart devices.
+    HiMe OS is an AI Operating System designed to become the intelligent layer between users, their devices, applications, and AI models.
   </p>
 </p>
 
 ---
 
-## 🚀 Overview
+# Overview
 
-HiMe OS is an ambitious AI Operating System designed to become the central intelligence for a user's digital ecosystem.
+HiMe OS is an open-source AI Operating System that unifies modern AI, automation, memory, device control, and productivity into a single platform.
 
-Unlike traditional AI chatbots, HiMe OS aims to understand context, remember projects, automate workflows, interact with devices, and serve as a personal AI companion.
+Unlike traditional AI chatbots, HiMe OS is designed to understand context, remember information, automate workflows, and interact with both software and hardware.
 
-The long-term vision is to build an AI platform capable of connecting:
+The long-term objective is to build a platform that connects:
 
 - 💻 Computers
 - 📱 Mobile Devices
 - ☁️ Cloud Services
-- 🤖 AI Models
-- 🏠 Smart Devices (IoT)
-- 🎤 Voice Assistant
-- 🧠 Long-term Memory
-- ⚡ Automations
+- 🤖 Multiple AI Models
+- 🏠 IoT Devices
+- 🎤 Voice Interfaces
+- 🧠 Long-Term Memory
+- ⚡ Intelligent Automations
 
 ---
 
 # Vision
 
-HiMe OS is built around one simple idea:
-
 > **One AI. Every Device. One Memory.**
 
-Instead of switching between dozens of applications and AI assistants, users interact with a single intelligent operating system that understands their work, remembers context, and performs actions across multiple platforms.
+Instead of switching between multiple applications and assistants, users interact with a single intelligent operating system that understands their work, remembers context, and performs actions across connected devices.
 
 ---
 
-# Current Status
-
-Current Development Phase:
-
-**Frontend MVP**
-
-Completed:
-
-- Modern Landing Page
-- AI Dashboard UI
-- Chat Interface
-- Responsive Design
-- Navigation
-- Component Architecture
-
-Upcoming:
-
-- Backend APIs
-- Authentication
-- AI Engine
-- Memory System
-- Desktop Agent
-- Mobile Companion
-- Voice Assistant
-
----
-
-# Features
+# Core Features
 
 ## AI Assistant
 
 - Natural conversations
 - Context-aware responses
-- Project understanding
-- Long-term memory
 - Multi-model AI support
+- Long-term memory
+- Project awareness
 
 ---
 
 ## Device Control
 
-HiMe OS is designed to control devices users already own.
+HiMe OS is designed to control both software and hardware.
 
-Examples:
+Examples include:
 
 - Laptop
-- Android Phone
-- Smart TV
-- Bluetooth Devices
+- Desktop
+- Android devices
+- Smart TVs
+- Bluetooth devices
 
-Future Support:
+Future integrations include:
 
-- Smart Lights
-- Smart Plugs
-- Security Cameras
-- Door Locks
-- ESP32 Devices
+- Smart lights
+- Smart plugs
+- Security cameras
+- Door locks
+- ESP32
 - Raspberry Pi
 
 ---
 
 ## Desktop Agent
 
-HiMe OS will communicate with a secure desktop agent capable of:
+The desktop agent is responsible for interacting directly with the user's computer.
 
-- Opening applications
-- Launching VS Code
+Capabilities include:
+
+- Launching applications
+- Opening VS Code
 - Running terminal commands
-- Searching files
-- Monitoring system resources
-- Managing projects
+- File searching
+- System monitoring
+- Project management
 
 ---
 
 ## Mobile Companion
 
-The mobile application will provide:
+The mobile application extends HiMe OS beyond the desktop.
 
+Features include:
+
+- AI Chat
 - Voice Assistant
 - Notifications
 - Remote Device Control
-- AI Chat
 - Automation Management
 
 ---
 
 ## AI Memory
 
-HiMe OS remembers:
+HiMe OS is designed with persistent memory.
+
+It can remember:
 
 - Conversations
 - Projects
 - Preferences
-- Tasks
 - Files
+- Tasks
 - Workflows
 
 The goal is to eliminate repetitive prompting.
@@ -141,50 +120,47 @@ The goal is to eliminate repetitive prompting.
 
 ## Automation Engine
 
+HiMe OS allows users to automate workflows through natural language.
+
 Example:
 
-**"I'm going to study."**
+> "I'm going to study."
 
-HiMe OS can:
+HiMe OS can automatically:
 
 - Enable Focus Mode
 - Open VS Code
 - Launch GitHub
-- Open Project
-- Play Study Playlist
-- Start Pomodoro Timer
+- Open the current project
+- Play a study playlist
+- Start a Pomodoro timer
 
 ---
 
-# Planned Architecture
+# High-Level Architecture
 
-```
-                +----------------+
-                |   Frontend UI  |
-                +--------+-------+
-                         |
-                REST / WebSocket
-                         |
-               +---------+----------+
-               |      Backend       |
-               +---------+----------+
-                         |
-        +----------------+----------------+
-        |                |                |
-   AI Engine        Memory Service    Auth Service
-        |                |                |
-        +----------------+----------------+
-                         |
-                  PostgreSQL Database
-                         |
-        +----------------+----------------+
-        |                |                |
- Desktop Agent      Mobile App       IoT Devices
+```text
+                    Frontend
+                        │
+          REST API / WebSocket
+                        │
+                    Backend
+      ┌───────────────┼───────────────┐
+      │               │               │
+  AI Engine      Memory Service   Authentication
+      │               │               │
+      └───────────────┼───────────────┘
+                      │
+                 PostgreSQL
+                      │
+      ┌───────────────┼───────────────┐
+      │               │               │
+ Desktop Agent   Mobile App      IoT Devices
 ```
 
 ---
 
-# Tech Stack
+# Technology Stack
 
 ## Frontend
 
@@ -192,173 +168,122 @@ HiMe OS can:
 - TypeScript
 - Vite
 - Tailwind CSS
-- Shadcn UI
+- shadcn/ui
 
-## Backend (Planned)
+## Backend
 
 - Fastify
 - TypeScript
-- Prisma
 - PostgreSQL
+- Prisma
+- JWT
 - Redis
-- Socket.IO
+- Zod
+- Pino
 
 ## AI
 
 - OpenAI
-- Gemini
-- Claude
+- Anthropic Claude
+- Google Gemini
 - Local LLM Support
-
-## Desktop
-
-- Electron / Tauri
-- Node.js
 
 ## Mobile
 
 - Flutter
 
+## Desktop
+
+- Tauri / Electron
+
 ---
 
 # Repository Structure
 
-```
+```text
 HiMe-OS/
-
-├── frontend/
-├── backend/
-├── mobile/
-├── desktop-agent/
-├── shared/
+├── backend/              # Backend application
 ├── docs/
-├── architecture/
-├── README.md
-└── LICENSE
+│   └── images/           # README assets
+├── public/               # Static assets
+├── src/                  # Frontend source
+├── .gitignore
+├── .oxlintrc.json
+├── components.json
+├── index.html
+├── package.json
+├── package-lock.json
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite.config.ts
+└── README.md
 ```
-
----
-
-# Development Roadmap
-
-## Phase 1
-
-- [x] UI Design
-- [x] Landing Page
-- [x] Dashboard
-- [x] Chat Interface
-
----
-
-## Phase 2
-
-- [ ] Backend Setup
-- [ ] Authentication
-- [ ] Database
-- [ ] REST APIs
-
----
-
-## Phase 3
-
-- [ ] AI Engine
-- [ ] Memory
-- [ ] Context Management
-
----
-
-## Phase 4
-
-- [ ] Desktop Agent
-
----
-
-## Phase 5
-
-- [ ] Mobile Application
-
----
-
-## Phase 6
-
-- [ ] IoT Integration
-
----
-
-## Phase 7
-
-- [ ] Voice Assistant
 
 ---
 
 # Installation
 
+Clone the repository:
+
 ```bash
-git clone https://github.com/Ayu5h576/HiMe-os.git
+git clone https://github.com/Ayu5h576/HiMe-OS.git
+cd HiMe-OS
+```
 
-cd HiMe-os
+Install dependencies:
 
+```bash
 npm install
+```
 
+Run the frontend:
+
+```bash
+npm run dev
+```
+
+Run the backend:
+
+```bash
+cd backend
+npm install
 npm run dev
 ```
 
 ---
 
-# Why HiMe OS?
+# Design Principles
 
-HiMe OS is not another chatbot.
+HiMe OS follows these principles:
 
-It is an AI Operating System designed to become the intelligent layer between users, their devices, and modern AI models.
-
-The objective is to provide one unified interface for productivity, automation, memory, and digital assistance.
-
----
-
-# Future Goals
-
-- AI Workspace
-- Autonomous Task Execution
-- Smart Device Integration
-- Local AI Support
-- Plugin Marketplace
-- Team Collaboration
-- Cross-platform Synchronization
+- Production-first architecture
+- Modular design
+- Clean Architecture
+- SOLID principles
+- Security by default
+- Scalability
+- AI-first user experience
+- Cross-platform compatibility
 
 ---
-
-# Screenshots
-
-
-
-## Dashboard
-
-![Dashboard](docs/images/Dashboard.png)
-
----
-
-## AI Chat
-
-![AI Chat](docs/images/ai-chat.png)
 
 # Contributing
 
-Contributions, feature requests, and suggestions are welcome.
+Contributions are welcome.
 
-If you'd like to contribute:
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Submit a Pull Request
+1. Fork the repository.
+2. Create a feature branch.
+3. Commit your changes.
+4. Open a Pull Request.
 
 ---
 
 # License
 
-This project is currently under development.
+This project is currently under active development.
 
-A license will be added before the first stable public release.
+A license will be added before the first stable release.
 
 ---
 
@@ -368,12 +293,13 @@ A license will be added before the first stable public release.
 
 Computer Science Student • Full Stack Developer • UI/UX Designer
 
-GitHub: https://github.com/Ayu5h576
+GitHub:
+https://github.com/Ayu5h576
 
 ---
 
 ## ⭐ Support
 
-If you like this project, consider giving it a ⭐ on GitHub.
+If you like HiMe OS, consider giving the repository a ⭐.
 
-It motivates future development and helps others discover HiMe OS.
+It helps support the project and increases its visibility.
