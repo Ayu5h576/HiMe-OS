@@ -12,6 +12,11 @@ import { routes } from './routes';
 
 export const buildApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({
+    ajv: {
+      customOptions: {
+        keywords: ['example'],
+      },
+    },
     logger:
       env.NODE_ENV === 'development'
         ? {
@@ -24,7 +29,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
               },
             },
           }
-        : true,
+        : env.NODE_ENV !== 'test',
   });
 
   // Security & Utility Middlewares
