@@ -17,6 +17,14 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   CORS_ORIGIN: z.string().default('*'),
+
+  // AI Provider Layer Configuration
+  AI_PROVIDER: z.enum(['openai', 'gemini', 'claude', 'ollama']).default('openai'),
+  OPENAI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  DEFAULT_MODEL: z.string().optional(),
 });
 
 const parseEnv = () => {

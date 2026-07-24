@@ -34,8 +34,7 @@ export const updateMemorySchema = z.object({
 export const getMemoriesQuerySchema = z.object({
   search: z.string().optional(),
   type: z.nativeEnum(MemoryType).optional(),
-  importance: z
-    .coerce
+  importance: z.coerce
     .number()
     .int('Importance must be an integer')
     .min(1, 'Importance must be between 1 and 10')
