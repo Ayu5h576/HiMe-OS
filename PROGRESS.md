@@ -2,8 +2,9 @@
 
 > **Last Updated**: July 24, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Tests**: 39/39 passing (100% pass rate)  
-> **Total Lines of Code Added**: ~2,600+
+> **Total Test Pass Rate**: 59/59 passing (100% across 5 test suites)  
+> **Total API Endpoints**: 22 Endpoints  
+> **Total Lines of Code Added**: ~4,100+
 
 ---
 
@@ -16,12 +17,13 @@
 5. [Phase 2 — Authentication System](#phase-2--authentication-system)
 6. [Phase 3 — Project Workspace Module](#phase-3--project-workspace-module)
 7. [Phase 4 — Task Management Module](#phase-4--task-management-module)
-8. [Database Schema](#database-schema)
-9. [API Endpoints Summary](#api-endpoints-summary)
-10. [Test Coverage](#test-coverage)
-11. [File Structure](#file-structure)
-12. [Git Commit History](#git-commit-history)
-13. [What's Next](#whats-next)
+8. [Phase 5 — Conversation Engine Module](#phase-5--conversation-engine-module)
+9. [Database Schema](#database-schema)
+10. [API Endpoints Summary](#api-endpoints-summary)
+11. [Test Coverage](#test-coverage)
+12. [File Structure](#file-structure)
+13. [Git Commit History](#git-commit-history)
+14. [What's Next](#whats-next)
 
 ---
 
@@ -35,21 +37,21 @@ The backend is intentionally built module by module, following clean architectur
 
 ## Tech Stack
 
-| Layer          | Technology                        |
-| :------------- | :-------------------------------- |
-| Runtime        | Node.js (v20+)                    |
-| Language       | TypeScript (strict mode)          |
-| Framework      | Fastify                           |
-| Database       | PostgreSQL                        |
-| ORM            | Prisma                            |
-| Authentication | JWT (Access + Refresh Tokens)     |
-| Validation     | Zod                               |
+| Layer          | Technology                             |
+| :------------- | :------------------------------------- |
+| Runtime        | Node.js (v20+)                         |
+| Language       | TypeScript (strict mode)               |
+| Framework      | Fastify                                |
+| Database       | PostgreSQL                             |
+| ORM            | Prisma                                 |
+| Authentication | JWT (Access + Refresh Tokens)          |
+| Validation     | Zod                                    |
 | Documentation  | Swagger / OpenAPI (`@fastify/swagger`) |
-| Hashing        | bcrypt                            |
-| Logging        | Pino (via Fastify)                |
-| Testing        | Vitest                            |
-| Linting        | ESLint                            |
-| Formatting     | Prettier                          |
+| Hashing        | bcrypt                                 |
+| Logging        | Pino (via Fastify)                     |
+| Testing        | Vitest                                 |
+| Linting        | ESLint                                 |
+| Formatting     | Prettier                               |
 
 ---
 
@@ -83,28 +85,21 @@ Routes
 
 ### What Was Built
 
-| Component               | File(s)                                         |
-| :---------------------- | :---------------------------------------------- |
-| Fastify app builder     | `src/app.ts`                                    |
-| Server bootstrap        | `src/server.ts`                                 |
-| Environment config      | `src/config/env.ts`                             |
-| Logger                  | `src/config/logger.ts`                          |
+| Component               | File(s)                                           |
+| :---------------------- | :------------------------------------------------ |
+| Fastify app builder     | `src/app.ts`                                      |
+| Server bootstrap        | `src/server.ts`                                   |
+| Environment config      | `src/config/env.ts`                               |
+| Logger                  | `src/config/logger.ts`                            |
 | Prisma database client  | `src/config/database.ts`, `src/plugins/prisma.ts` |
-| JWT plugin              | `src/plugins/jwt.ts`                            |
-| Swagger plugin          | `src/plugins/swagger.ts`                        |
-| Auth middleware          | `src/middleware/auth.ts`                        |
-| Global error handler    | `src/middleware/errorHandler.ts`                |
-| 404 handler             | `src/middleware/notFound.ts`                    |
-| Health check route      | `src/routes/health.route.ts`                    |
-| Route aggregator        | `src/routes/index.ts`                           |
-| Health check tests      | `tests/health.test.ts`                          |
-
-### Key Decisions
-
-- Fastify chosen over Express for performance (JSON serialization, schema validation, plugin system).
-- Prisma chosen for type-safe database queries and migration management.
-- Pino logger integrated via Fastify for structured JSON logging.
-- AJV configured with `customOptions: { keywords: ['example'] }` to support Swagger `example` fields without `FST_ERR_SCH_VALIDATION_BUILD` errors.
+| JWT plugin              | `src/plugins/jwt.ts`                              |
+| Swagger plugin          | `src/plugins/swagger.ts`                          |
+| Auth middleware          | `src/middleware/auth.ts`                          |
+| Global error handler    | `src/middleware/errorHandler.ts`                  |
+| 404 handler             | `src/middleware/notFound.ts`                      |
+| Health check route      | `src/routes/health.route.ts`                      |
+| Route aggregator        | `src/routes/index.ts`                             |
+| Health check tests      | `tests/health.test.ts`                            |
 
 ---
 
@@ -128,29 +123,14 @@ Routes
 | Auth routes                | `src/routes/auth.route.ts`                  |
 | Type declarations          | `src/types/index.ts`                        |
 | Auth test suite            | `tests/auth.test.ts`                        |
-| Architecture documentation | `docs/auth-architecture.md`                 |
 
 ### API Endpoints
 
-| Method | Endpoint          | Auth Required | Description                              |
-| :----- | :---------------- | :------------ | :--------------------------------------- |
-| `POST` | `/auth/register`  | No            | Register new user account                |
-| `POST` | `/auth/login`     | No            | Login with email + password              |
-| `GET`  | `/auth/me`        | Yes           | Get authenticated user profile           |
-
-### Security Features
-
-- Passwords hashed with **bcrypt** (salt rounds: 12).
-- Password is **never returned** in any API response.
-- JWT payload contains only minimal identity info (`id`, `email`, `role`).
-- Access tokens expire in 15 minutes (`JWT_EXPIRES_IN=15m`).
-- Refresh token support configured (`JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES_IN`).
-- `UserRole` enum (`USER`, `ADMIN`) and `isActive` flag prepared for future RBAC.
-- Custom error hierarchy: `AppError`, `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409).
-
-### Test Results
-
-- **9/9 tests passing**: Registration (success, duplicate email, missing fields), Login (success, wrong password, non-existent user), Profile retrieval (success, no token, invalid token).
+| Method | Endpoint          | Auth Required | Description                    |
+| :----- | :---------------- | :------------ | :----------------------------- |
+| `POST` | `/auth/register`  | No            | Register new user account      |
+| `POST` | `/auth/login`     | No            | Login with email + password    |
+| `GET`  | `/auth/me`        | Yes           | Get authenticated user profile |
 
 ---
 
@@ -161,35 +141,25 @@ Routes
 
 ### What Was Built
 
-| Component                  | File(s)                                        |
-| :------------------------- | :--------------------------------------------- |
-| Project model (Prisma)     | `prisma/schema.prisma`                         |
-| Project Zod schemas        | `src/schemas/project.schema.ts`                |
-| Project repository         | `src/repositories/project.repository.ts`       |
-| Project service            | `src/services/project.service.ts`              |
-| Project controller         | `src/controllers/project.controller.ts`        |
-| Project routes             | `src/routes/project.route.ts`                  |
-| Project test suite         | `tests/project.test.ts`                        |
+| Component              | File(s)                                    |
+| :--------------------- | :----------------------------------------- |
+| Project model (Prisma) | `prisma/schema.prisma`                     |
+| Project Zod schemas    | `src/schemas/project.schema.ts`            |
+| Project repository     | `src/repositories/project.repository.ts`   |
+| Project service        | `src/services/project.service.ts`          |
+| Project controller     | `src/controllers/project.controller.ts`    |
+| Project routes         | `src/routes/project.route.ts`              |
+| Project test suite     | `tests/project.test.ts`                    |
 
 ### API Endpoints
 
-| Method   | Endpoint           | Auth Required | Description                                 |
-| :------- | :----------------- | :------------ | :------------------------------------------ |
-| `POST`   | `/projects`        | Yes           | Create new workspace project container      |
-| `GET`    | `/projects`        | Yes           | List all projects owned by user             |
-| `GET`    | `/projects/:id`    | Yes           | Get single project details                  |
-| `PATCH`  | `/projects/:id`    | Yes           | Update project name, color, icon, archive   |
-| `DELETE` | `/projects/:id`    | Yes           | Delete project container                    |
-
-### Security
-
-- All endpoints protected by JWT `authenticate` middleware.
-- Strict ownership enforcement: users can only access projects where `ownerId === req.user.id`.
-- Accessing another user's project returns `403 Forbidden`.
-
-### Test Results
-
-- **12/12 tests passing**: Unauthenticated rejection, creation (success, missing name), listing (owner vs empty), retrieval (owner, non-owner 403), update (owner, non-owner 403), deletion (non-owner 403, owner, 404 after delete).
+| Method   | Endpoint        | Auth Required | Description                              |
+| :------- | :-------------- | :------------ | :--------------------------------------- |
+| `POST`   | `/projects`     | Yes           | Create new workspace project container   |
+| `GET`    | `/projects`     | Yes           | List all projects owned by user          |
+| `GET`    | `/projects/:id` | Yes           | Get single project details               |
+| `PATCH`  | `/projects/:id` | Yes           | Update project name, color, icon, status |
+| `DELETE` | `/projects/:id` | Yes           | Delete project container                 |
 
 ---
 
@@ -200,48 +170,70 @@ Routes
 
 ### What Was Built
 
-| Component                  | File(s)                                        |
-| :------------------------- | :--------------------------------------------- |
-| TaskStatus enum            | `prisma/schema.prisma`                         |
-| TaskPriority enum          | `prisma/schema.prisma`                         |
-| Task model (Prisma)        | `prisma/schema.prisma`                         |
-| Task Zod schemas           | `src/schemas/task.schema.ts`                   |
-| Task repository            | `src/repositories/task.repository.ts`          |
-| Task service               | `src/services/task.service.ts`                 |
-| Task controller            | `src/controllers/task.controller.ts`           |
-| Task routes                | `src/routes/task.route.ts`                     |
-| Task test suite            | `tests/task.test.ts`                           |
+| Component         | File(s)                                 |
+| :---------------- | :-------------------------------------- |
+| TaskStatus enum   | `prisma/schema.prisma`                  |
+| TaskPriority enum | `prisma/schema.prisma`                  |
+| Task model        | `prisma/schema.prisma`                  |
+| Task Zod schemas  | `src/schemas/task.schema.ts`            |
+| Task repository   | `src/repositories/task.repository.ts`   |
+| Task service      | `src/services/task.service.ts`          |
+| Task controller   | `src/controllers/task.controller.ts`    |
+| Task routes       | `src/routes/task.route.ts`              |
+| Task test suite   | `tests/task.test.ts`                    |
 
 ### API Endpoints
 
-| Method   | Endpoint                         | Auth Required | Description                                         |
-| :------- | :------------------------------- | :------------ | :-------------------------------------------------- |
-| `POST`   | `/projects/:projectId/tasks`     | Yes           | Create task under a project                         |
-| `GET`    | `/projects/:projectId/tasks`     | Yes           | List tasks (filter, search, sort, paginate)         |
-| `GET`    | `/tasks/:id`                     | Yes           | Get single task details                             |
-| `PATCH`  | `/tasks/:id`                     | Yes           | Update task fields and status transitions           |
-| `DELETE` | `/tasks/:id`                     | Yes           | Delete task                                         |
+| Method   | Endpoint                     | Auth Required | Description                                  |
+| :------- | :--------------------------- | :------------ | :------------------------------------------- |
+| `POST`   | `/projects/:projectId/tasks` | Yes           | Create task under a project                  |
+| `GET`    | `/projects/:projectId/tasks` | Yes           | List tasks (filter, search, sort, paginate)  |
+| `GET`    | `/tasks/:id`                 | Yes           | Get single task details                      |
+| `PATCH`  | `/tasks/:id`                 | Yes           | Update task fields and status transitions    |
+| `DELETE` | `/tasks/:id`                 | Yes           | Delete task                                  |
 
-### Features
+---
 
-- **Status Enum**: `TODO`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
-- **Priority Enum**: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
-- **Filtering**: By `status`, `priority`, and full-text `search` (case-insensitive on title and description).
-- **Sorting**: By `createdAt`, `dueDate`, `priority`, `status`, or `title` in `asc` or `desc` order.
-- **Pagination**: `page` and `limit` query parameters with `total`, `page`, `limit`, `totalPages` metadata.
-- **Automatic `completedAt` Timestamp Management**:
-  - Setting `status = COMPLETED` → automatically sets `completedAt = current timestamp`.
-  - Reopening a task (changing status away from `COMPLETED`) → resets `completedAt = null`.
+## Phase 5 — Conversation Engine Module
 
-### Security
+**Status**: ✅ Complete  
+**Commit**: `93c7932` — *Implement Conversation Engine module with message persistence and full test coverage*
 
-- All endpoints protected by JWT `authenticate` middleware.
-- Ownership enforcement via `ProjectService.getProjectById(userId, projectId)` — users can only manage tasks belonging to their own projects.
-- Cross-user task access returns `403 Forbidden`.
+### What Was Built
 
-### Test Results
+| Component               | File(s)                                         |
+| :---------------------- | :---------------------------------------------- |
+| MessageRole enum        | `prisma/schema.prisma`                          |
+| Conversation model      | `prisma/schema.prisma`                          |
+| Message model           | `prisma/schema.prisma`                          |
+| Conversation schemas    | `src/schemas/conversation.schema.ts`            |
+| Conversation repository | `src/repositories/conversation.repository.ts`   |
+| Message repository      | `src/repositories/message.repository.ts`        |
+| Conversation service    | `src/services/conversation.service.ts`          |
+| Conversation controller | `src/controllers/conversation.controller.ts`    |
+| Conversation routes     | `src/routes/conversation.route.ts`              |
+| Conversation test suite | `tests/conversation.test.ts`                    |
 
-- **16/16 tests passing**: Unauthenticated rejection, creation (success, empty title, non-owner 403), listing (owner, filter by status+priority, non-owner 403), retrieval (owner, non-owner 403, non-existent 404), completion timestamp (set on COMPLETED, reset on reopen), update (non-owner 403), deletion (non-owner 403, owner, 404 after delete).
+### API Endpoints
+
+| Method   | Endpoint                             | Auth Required | Description                                        |
+| :------- | :----------------------------------- | :------------ | :------------------------------------------------- |
+| `POST`   | `/projects/:projectId/conversations` | Yes           | Create a conversation under a project              |
+| `GET`    | `/projects/:projectId/conversations` | Yes           | List all conversations in a project                |
+| `GET`    | `/conversations/:id`                 | Yes           | Get conversation by ID                             |
+| `PATCH`  | `/conversations/:id`                 | Yes           | Update conversation title                          |
+| `DELETE` | `/conversations/:id`                 | Yes           | Delete conversation (cascades all messages)        |
+| `POST`   | `/conversations/:id/messages`        | Yes           | Create a message in a conversation                 |
+| `GET`    | `/conversations/:id/messages`        | Yes           | List messages in a conversation (chronological)   |
+
+### Features & Business Rules
+
+- **Message Roles**: `USER`, `ASSISTANT`, `SYSTEM`, `TOOL`.
+- **Chronological Ordering**: Messages listed in `createdAt asc` order for natural chat flow.
+- **Pagination**: Paginated message loading (`page`, `limit`) with `total` and `totalPages` metadata.
+- **Flexible Metadata**: `metadata` stored as optional `Json?` for future AI tool calls, citations, and provider traces. Fastify response schema configured with `additionalProperties: true` to preserve metadata keys.
+- **Cascade Deletions**: Deleting a project deletes its conversations; deleting a conversation deletes all its messages.
+- **Ownership Security**: Project ownership verified via `ProjectService.getProjectById(userId, projectId)` before any read or write.
 
 ---
 
@@ -251,95 +243,93 @@ Routes
 enum UserRole     { USER | ADMIN }
 enum TaskStatus   { TODO | IN_PROGRESS | COMPLETED | CANCELLED }
 enum TaskPriority { LOW | MEDIUM | HIGH | CRITICAL }
+enum MessageRole  { USER | ASSISTANT | SYSTEM | TOOL }
 
 User ─┬─ id, email, password, name, role, isActive, createdAt, updatedAt
       └─► has many Projects
 
 Project ─┬─ id, name, description, color, icon, isArchived, ownerId, createdAt, updatedAt
          ├─► belongs to User (ownerId → User.id, onDelete: Cascade)
-         └─► has many Tasks
+         ├─► has many Tasks
+         └─► has many Conversations
 
 Task ─┬─ id, title, description, status, priority, dueDate, completedAt, projectId, createdAt, updatedAt
       └─► belongs to Project (projectId → Project.id, onDelete: Cascade)
-```
 
-### Relationships
+Conversation ─┬─ id, title, projectId, createdAt, updatedAt
+             ├─► belongs to Project (projectId → Project.id, onDelete: Cascade)
+             └─► has many Messages
 
+Message ─┬─ id, role, content, metadata, conversationId, createdAt, updatedAt
+        └─► belongs to Conversation (conversationId → Conversation.id, onDelete: Cascade)
 ```
-User (1) ──► (N) Project (1) ──► (N) Task
-```
-
-- Deleting a `User` cascades to all their `Projects` and `Tasks`.
-- Deleting a `Project` cascades to all its `Tasks`.
 
 ---
 
 ## API Endpoints Summary
 
-### Health
+### 1. Health (1 Endpoint)
 
-| Method | Endpoint     | Auth | Description    |
-| :----- | :----------- | :--- | :------------- |
-| `GET`  | `/health`    | No   | Health check   |
+| Method | Endpoint  | Auth | Description  |
+| :----- | :-------- | :--- | :----------- |
+| `GET`  | `/health` | No   | Health check |
 
-### Authentication
+### 2. Authentication (3 Endpoints)
 
-| Method | Endpoint          | Auth | Description            |
-| :----- | :---------------- | :--- | :--------------------- |
-| `POST` | `/auth/register`  | No   | Register new account   |
-| `POST` | `/auth/login`     | No   | Login (email+password) |
-| `GET`  | `/auth/me`        | Yes  | Get user profile       |
+| Method | Endpoint         | Auth | Description            |
+| :----- | :--------------- | :--- | :--------------------- |
+| `POST` | `/auth/register` | No   | Register new account   |
+| `POST` | `/auth/login`    | No   | Login (email+password) |
+| `GET`  | `/auth/me`       | Yes  | Get user profile       |
 
-### Projects
+### 3. Projects (5 Endpoints)
 
-| Method   | Endpoint           | Auth | Description              |
-| :------- | :----------------- | :--- | :----------------------- |
-| `POST`   | `/projects`        | Yes  | Create project           |
-| `GET`    | `/projects`        | Yes  | List user's projects     |
-| `GET`    | `/projects/:id`    | Yes  | Get project by ID        |
-| `PATCH`  | `/projects/:id`    | Yes  | Update project           |
-| `DELETE` | `/projects/:id`    | Yes  | Delete project           |
+| Method   | Endpoint        | Auth | Description          |
+| :------- | :-------------- | :--- | :------------------- |
+| `POST`   | `/projects`     | Yes  | Create project       |
+| `GET`    | `/projects`     | Yes  | List user's projects |
+| `GET`    | `/projects/:id` | Yes  | Get project by ID    |
+| `PATCH`  | `/projects/:id` | Yes  | Update project       |
+| `DELETE` | `/projects/:id` | Yes  | Delete project       |
 
-### Tasks
+### 4. Tasks (5 Endpoints)
 
-| Method   | Endpoint                       | Auth | Description                        |
-| :------- | :----------------------------- | :--- | :--------------------------------- |
-| `POST`   | `/projects/:projectId/tasks`   | Yes  | Create task under project          |
-| `GET`    | `/projects/:projectId/tasks`   | Yes  | List tasks (filter, sort, paginate)|
-| `GET`    | `/tasks/:id`                   | Yes  | Get single task                    |
-| `PATCH`  | `/tasks/:id`                   | Yes  | Update task                        |
-| `DELETE` | `/tasks/:id`                   | Yes  | Delete task                        |
+| Method   | Endpoint                     | Auth | Description                         |
+| :------- | :--------------------------- | :--- | :---------------------------------- |
+| `POST`   | `/projects/:projectId/tasks` | Yes  | Create task under project           |
+| `GET`    | `/projects/:projectId/tasks` | Yes  | List tasks (filter, sort, paginate) |
+| `GET`    | `/tasks/:id`                 | Yes  | Get single task                     |
+| `PATCH`  | `/tasks/:id`                 | Yes  | Update task                         |
+| `DELETE` | `/tasks/:id`                 | Yes  | Delete task                         |
 
-**Total Endpoints**: 15
+### 5. Conversations & Messages (7 Endpoints)
+
+| Method   | Endpoint                             | Auth | Description                         |
+| :------- | :----------------------------------- | :--- | :---------------------------------- |
+| `POST`   | `/projects/:projectId/conversations` | Yes  | Create conversation under project   |
+| `GET`    | `/projects/:projectId/conversations` | Yes  | List project conversations          |
+| `GET`    | `/conversations/:id`                 | Yes  | Get single conversation             |
+| `PATCH`  | `/conversations/:id`                 | Yes  | Update conversation title           |
+| `DELETE` | `/conversations/:id`                 | Yes  | Delete conversation & messages      |
+| `POST`   | `/conversations/:id/messages`        | Yes  | Add message to conversation         |
+| `GET`    | `/conversations/:id/messages`        | Yes  | List messages (chronological order) |
+
+**Total Endpoints**: 22
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  4 passed (4)
-     Tests  39 passed (39)
+Test Files  5 passed (5)
+     Tests  59 passed (59)
 
-  ✓ tests/health.test.ts    (2 tests)
-  ✓ tests/auth.test.ts      (9 tests)
-  ✓ tests/project.test.ts   (12 tests)
-  ✓ tests/task.test.ts      (16 tests)
+  ✓ tests/health.test.ts        (2 tests)
+  ✓ tests/auth.test.ts          (9 tests)
+  ✓ tests/project.test.ts       (12 tests)
+  ✓ tests/task.test.ts          (16 tests)
+  ✓ tests/conversation.test.ts  (20 tests)
 ```
-
-### What Is Tested
-
-- ✅ User registration (success, duplicate, missing fields)
-- ✅ User login (success, wrong password, non-existent)
-- ✅ JWT profile retrieval (valid, missing, invalid tokens)
-- ✅ Project CRUD (create, list, read, update, delete)
-- ✅ Project ownership isolation (cross-user 403)
-- ✅ Task CRUD (create, list, read, update, delete)
-- ✅ Task filtering by status and priority
-- ✅ Task completion timestamp auto-management
-- ✅ Task reopening resets completedAt
-- ✅ Task ownership validation (cross-user 403)
-- ✅ Input validation errors (400)
-- ✅ Not found errors (404)
 
 ---
 
@@ -348,7 +338,7 @@ Test Files  4 passed (4)
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma                  # Database schema (User, Project, Task)
+│   ├── schema.prisma                  # Database schema (User, Project, Task, Conversation, Message)
 │   └── migrations/                    # PostgreSQL migration files
 ├── src/
 │   ├── app.ts                         # Fastify app builder
@@ -360,7 +350,8 @@ backend/
 │   ├── controllers/
 │   │   ├── auth.controller.ts         # Auth HTTP handlers
 │   │   ├── project.controller.ts      # Project HTTP handlers
-│   │   └── task.controller.ts         # Task HTTP handlers
+│   │   ├── task.controller.ts         # Task HTTP handlers
+│   │   └── conversation.controller.ts # Conversation & Message HTTP handlers
 │   ├── middleware/
 │   │   ├── auth.ts                    # JWT authenticate middleware
 │   │   ├── errorHandler.ts            # Global error handler
@@ -372,34 +363,41 @@ backend/
 │   ├── repositories/
 │   │   ├── user.repository.ts         # User data access layer
 │   │   ├── project.repository.ts      # Project data access layer
-│   │   └── task.repository.ts         # Task data access layer
+│   │   ├── task.repository.ts         # Task data access layer
+│   │   ├── conversation.repository.ts # Conversation data access layer
+│   │   └── message.repository.ts      # Message data access layer
 │   ├── routes/
 │   │   ├── index.ts                   # Route aggregator
 │   │   ├── health.route.ts            # GET /health
 │   │   ├── auth.route.ts              # /auth/* routes
 │   │   ├── project.route.ts           # /projects/* routes
-│   │   └── task.route.ts              # /tasks/* and /projects/:id/tasks routes
+│   │   ├── task.route.ts              # /tasks/* and /projects/:id/tasks routes
+│   │   └── conversation.route.ts      # /conversations/* and /projects/:id/conversations routes
 │   ├── schemas/
 │   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas
 │   │   ├── health.schema.ts           # Health Swagger schema
 │   │   ├── project.schema.ts          # Project Zod + Swagger schemas
-│   │   └── task.schema.ts             # Task Zod + Swagger schemas
+│   │   ├── task.schema.ts             # Task Zod + Swagger schemas
+│   │   └── conversation.schema.ts     # Conversation Zod + Swagger schemas
 │   ├── services/
 │   │   ├── auth.service.ts            # Auth business logic
 │   │   ├── project.service.ts         # Project business logic
-│   │   └── task.service.ts            # Task business logic
+│   │   ├── task.service.ts            # Task business logic
+│   │   └── conversation.service.ts    # Conversation & Message business logic
 │   ├── types/
 │   │   └── index.ts                   # TypeScript type declarations
 │   └── utils/
 │       ├── errors.ts                  # Custom error classes
 │       └── hash.ts                    # bcrypt hashing utility
 ├── tests/
-│   ├── health.test.ts                 # Health endpoint tests
+│   ├── health.test.ts                 # Health endpoint tests (2)
 │   ├── auth.test.ts                   # Authentication tests (9)
 │   ├── project.test.ts               # Project CRUD tests (12)
-│   └── task.test.ts                   # Task Management tests (16)
+│   ├── task.test.ts                   # Task Management tests (16)
+│   └── conversation.test.ts           # Conversation & Message tests (20)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
+├── PROGRESS.md                        # Overall development progress report
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
@@ -412,12 +410,12 @@ backend/
 
 | Hash      | Message                                                                       |
 | :-------- | :---------------------------------------------------------------------------- |
+| `93c7932` | Implement Conversation Engine module with message persistence and full test coverage |
 | `965e50d` | Implement production-grade Task Management module with full test coverage     |
 | `fb2cd02` | Implement production-grade Project CRUD module with full test coverage        |
 | `880b7c7` | Implement production-ready authentication system and project progress review  |
 | `c48fce7` | Revise README for improved clarity and structure                              |
 | `14fd9d9` | feat: add backend with Fastify, Prisma, JWT auth, and API routes             |
-| `c9de1a5` | feat: add backend project structure with Express + TypeScript                 |
 
 ---
 
@@ -427,14 +425,13 @@ The following modules are planned but **not yet implemented**:
 
 | Module                  | Purpose                                                  | Priority |
 | :---------------------- | :------------------------------------------------------- | :------- |
-| Refresh Token Rotation  | Secure token refresh flow with rotation and revocation   | High     |
-| RBAC Middleware          | Role-based access control using `UserRole` enum          | High     |
-| Conversation Engine     | AI chat sessions tied to Projects                        | Medium   |
-| Memory / RAG Pipeline   | Vector embeddings (pgvector) for contextual AI memory    | Medium   |
-| Automation Engine       | Event-driven task/device automation triggers             | Medium   |
+| Memory / RAG Pipeline   | Vector embeddings (pgvector) for contextual AI memory    | High     |
+| AI Provider Integration | LLM provider integration (Gemini / OpenAI / Anthropic)   | High     |
+| Automation Engine       | Event-driven task/device/conversation triggers           | Medium   |
+| Refresh Token Rotation  | Secure token refresh flow with rotation and revocation   | Medium   |
+| RBAC Middleware          | Role-based access control using `UserRole` enum          | Medium   |
 | IoT Device Module       | Smart device registration, status, and control           | Low      |
 | Notification System     | In-app and push notification infrastructure              | Low      |
-| Desktop Agent           | Native OS agent for system-level automation              | Low      |
 
 ---
 
