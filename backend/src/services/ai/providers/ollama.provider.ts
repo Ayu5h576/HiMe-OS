@@ -7,7 +7,11 @@ export class OllamaProvider implements IAIProvider {
 
   async generateResponse(options: GenerateOptions): Promise<NormalizedAIResponse> {
     const model = options.model || AI_CONFIG.defaultModels.ollama;
-    const promptTokens = Math.max(1, Math.ceil(options.prompt.length / 4));
+    const promptText = options.normalizedPrompt
+      ? options.normalizedPrompt.messages.map((m) => m.content).join('\n')
+      : options.prompt;
+
+    const promptTokens = Math.max(1, Math.ceil(promptText.length / 4));
     const completionMessage = `Ollama (${model}) response to: "${options.prompt}"`;
     const completionTokens = Math.max(1, Math.ceil(completionMessage.length / 4));
 

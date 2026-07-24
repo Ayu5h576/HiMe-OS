@@ -22,9 +22,30 @@ export interface NormalizedAIResponse {
   usage: LLMUsage;
 }
 
+export interface PromptMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+}
+
+export interface PromptMetadata {
+  projectId: string;
+  conversationId: string;
+  messageCount: number;
+  systemPromptVersion: string;
+  trimmedMessagesCount: number;
+  memoryInjectionPoint: boolean;
+}
+
+export interface NormalizedPrompt {
+  systemPrompt: string;
+  messages: PromptMessage[];
+  metadata: PromptMetadata;
+}
+
 export interface GenerateOptions {
   prompt: string;
   conversationHistory?: ChatMessage[];
+  normalizedPrompt?: NormalizedPrompt;
   model?: string;
   provider?: AIProviderName;
   temperature?: number;

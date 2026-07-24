@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 24, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 86/86 passing (100% across 7 test suites)  
+> **Total Test Pass Rate**: 94/94 passing (100% across 8 test suites)  
 > **Total API Endpoints**: 28 Endpoints  
-> **Total Lines of Code Added**: ~6,100+
+> **Total Lines of Code Added**: ~6,900+
 
 ---
 
@@ -20,12 +20,13 @@
 8. [Phase 5 — Conversation Engine Module](#phase-5--conversation-engine-module)
 9. [Phase 6 — Memory Foundation Module](#phase-6--memory-foundation-module)
 10. [Phase 7 — AI Provider Layer Module](#phase-7--ai-provider-layer-module)
-11. [Database Schema](#database-schema)
-12. [API Endpoints Summary](#api-endpoints-summary)
-13. [Test Coverage](#test-coverage)
-14. [File Structure](#file-structure)
-15. [Git Commit History](#git-commit-history)
-16. [What's Next](#whats-next)
+11. [Phase 8 — Context Builder Module](#phase-8--context-builder-module)
+12. [Database Schema](#database-schema)
+13. [API Endpoints Summary](#api-endpoints-summary)
+14. [Test Coverage](#test-coverage)
+15. [File Structure](#file-structure)
+16. [Git Commit History](#git-commit-history)
+17. [What's Next](#whats-next)
 
 ---
 
@@ -76,7 +77,7 @@ Routes
 - **Repositories are the only layer that touches the database.**
 - **Routes only handle endpoint registration**, Swagger schema attachment, and middleware wiring.
 - **SOLID principles** are followed throughout.
-- **No `any` types`** — strict TypeScript is enforced by both `tsc` and ESLint.
+- **No `any` types** — strict TypeScript is enforced by both `tsc` and ESLint.
 
 ---
 
@@ -111,41 +112,37 @@ Routes
 ---
 
 ## Phase 7 — AI Provider Layer Module
+**Status**: ✅ Complete | **Commit**: `1730f8c`
+
+---
+
+## Phase 8 — Context Builder Module
 
 **Status**: ✅ Complete  
-**Commit**: `1730f8c` — *Implement provider-agnostic AI Provider Layer with normalized responses and full test coverage*
+**Commit**: Pending — *Implement Context Builder module with prompt formatters, history trimming, and AI service pipeline integration*
 
 ### What Was Built
 
-| Component               | File(s)                                                |
-| :---------------------- | :----------------------------------------------------- |
-| AI Config               | `src/config/ai.ts`                                     |
-| AI Types                | `src/types/ai.ts`                                      |
-| Provider Interface      | `src/services/ai/providers/provider.interface.ts`     |
-| OpenAI Provider         | `src/services/ai/providers/openai.provider.ts`        |
-| Gemini Provider         | `src/services/ai/providers/gemini.provider.ts`        |
-| Claude Provider         | `src/services/ai/providers/claude.provider.ts`        |
-| Ollama Provider         | `src/services/ai/providers/ollama.provider.ts`        |
-| Provider Manager        | `src/services/ai/provider-manager.ts`                 |
-| AI Service              | `src/services/ai/ai.service.ts`                       |
-| AI Zod & Swagger Schemas| `src/schemas/ai.schema.ts`                             |
-| AI Controller           | `src/controllers/ai.controller.ts`                    |
-| AI Routes               | `src/routes/ai.route.ts`                               |
-| AI Test Suite           | `tests/ai.test.ts`                                     |
-
-### API Endpoint
-
-| Method | Endpoint   | Auth Required | Description                                                    |
-| :----- | :--------- | :------------ | :------------------------------------------------------------- |
-| `POST` | `/ai/chat` | Yes           | Send prompt to AI layer, persist conversation, return response |
+| Component                    | File(s)                                         |
+| :--------------------------- | :---------------------------------------------- |
+| Project Prompt Formatter     | `src/services/ai/prompt/project.ts`             |
+| Conversation Prompt Formatter| `src/services/ai/prompt/conversation.ts`        |
+| Message Prompt Formatter     | `src/services/ai/prompt/messages.ts`            |
+| System Prompt Builder        | `src/services/ai/prompt/system.ts`              |
+| Context Tokenizer & Trimming | `src/services/ai/tokenizer.ts`                  |
+| Prompt Builder               | `src/services/ai/prompt-builder.ts`             |
+| Context Builder Orchestrator | `src/services/ai/context-builder.ts`            |
+| Context Builder Test Suite   | `tests/context-builder.test.ts`                 |
 
 ### Features & Business Rules
 
-- **Provider Abstraction**: Normalizes responses across OpenAI, Gemini, Claude, and Ollama.
-- **Dynamic Selection**: Chooses active provider via environment config (`AI_PROVIDER`) or explicit per-request override.
-- **Normalized Response**: Guarantees consistent shape (`id`, `provider`, `model`, `message`, `usage`).
-- **Conversation Integration**: Automatically persists user prompt (`role: 'USER'`), loads conversation history, invokes AI service, and persists assistant response (`role: 'ASSISTANT'`, saving provider/model/usage metadata).
-- **Ownership Validation**: Validates project ownership via `ConversationService.getConversationById` before executing AI generation.
+- **Prompt Normalization**: Produces a normalized prompt package (`systemPrompt`, `messages[]`, `metadata`) that AI providers consume without needing to understand database entities directly.
+- **Modular Section Formatters**: Isolated builders for Project workspace info, Conversation metadata, System prompt, and Message history.
+- **Chronological Message Ordering**: Guarantees messages are sorted chronologically ascending before trimming.
+- **Safe History Trimming**: Trims history exceeding `maxMessages` (default 20) or `maxContextLength` (default 8000 chars) without external token library dependencies.
+- **Memory Injection Extension Point**: Explicit placeholder in `SystemPromptBuilder` for future vector search / RAG memory retrieval injection.
+- **Architecture Integration**:
+  `User Request → ConversationService → ContextBuilder → AIService → ProviderManager → Provider`
 
 ---
 
@@ -237,16 +234,17 @@ Memory ─┬─ id, title, content, type, importance, tags, metadata, projectId
 ## Test Coverage
 
 ```
-Test Files  7 passed (7)
-     Tests  86 passed (86)
+Test Files  8 passed (8)
+     Tests  94 passed (94)
 
-  ✓ tests/health.test.ts        (2 tests)
-  ✓ tests/auth.test.ts          (9 tests)
-  ✓ tests/project.test.ts       (12 tests)
-  ✓ tests/task.test.ts          (16 tests)
-  ✓ tests/conversation.test.ts  (20 tests)
-  ✓ tests/memory.test.ts        (18 tests)
-  ✓ tests/ai.test.ts            (9 tests)
+  ✓ tests/health.test.ts           (2 tests)
+  ✓ tests/auth.test.ts             (9 tests)
+  ✓ tests/project.test.ts          (12 tests)
+  ✓ tests/task.test.ts             (16 tests)
+  ✓ tests/conversation.test.ts     (20 tests)
+  ✓ tests/memory.test.ts           (18 tests)
+  ✓ tests/ai.test.ts               (9 tests)
+  ✓ tests/context-builder.test.ts  (8 tests)
 ```
 
 ---
@@ -311,11 +309,19 @@ backend/
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
-│   │   └── ai/                        # AI Provider Layer
+│   │   └── ai/                        # AI & Context Builder Layer
+│   │       ├── context-builder.ts     # Context orchestrator
+│   │       ├── prompt-builder.ts      # Prompt package builder
+│   │       ├── tokenizer.ts           # History trimming logic
 │   │       ├── provider-manager.ts    # Provider registry & factory
-│   │       ├── ai.service.ts          # AI response normalization & execution
+│   │       ├── ai.service.ts          # AI response execution wrapper
 │   │       ├── index.ts               # AI barrel export
-│   │       └── providers/             # Individual provider implementations
+│   │       ├── prompt/                # Modular prompt formatters
+│   │       │   ├── system.ts          # System prompt builder
+│   │       │   ├── project.ts         # Project prompt formatter
+│   │       │   ├── conversation.ts    # Conversation prompt formatter
+│   │       │   └── messages.ts        # Message history formatter
+│   │       └── providers/             # Provider implementations
 │   │           ├── provider.interface.ts # IAIProvider contract
 │   │           ├── openai.provider.ts # OpenAI provider
 │   │           ├── gemini.provider.ts # Google Gemini provider
@@ -323,7 +329,7 @@ backend/
 │   │           └── ollama.provider.ts # Local Ollama provider
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
-│   │   └── ai.ts                      # AI interface types
+│   │   └── ai.ts                      # AI & Context Builder interface types
 │   └── utils/
 │       ├── errors.ts                  # Custom error classes
 │       └── hash.ts                    # bcrypt hashing utility
@@ -334,7 +340,8 @@ backend/
 │   ├── task.test.ts                   # Task Management tests (16)
 │   ├── conversation.test.ts           # Conversation & Message tests (20)
 │   ├── memory.test.ts                 # Memory Foundation tests (18)
-│   └── ai.test.ts                     # AI Provider Layer tests (9)
+│   ├── ai.test.ts                     # AI Provider Layer tests (9)
+│   └── context-builder.test.ts        # Context Builder tests (8)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -353,7 +360,7 @@ The following modules are planned for future implementation:
 | Module                  | Purpose                                                        | Priority |
 | :---------------------- | :------------------------------------------------------------- | :------- |
 | Vector Search / pgvector| Semantic embeddings and vector search for Memory retrieval     | High     |
-| Context Builder         | Assembles conversation history + memory context into AI prompt | High     |
+| RAG Memory Injection    | Plugs vector search results directly into Context Builder      | High     |
 | Automation Engine       | Event-driven task/device/memory triggers                       | Medium   |
 | Refresh Token Rotation  | Secure token refresh flow with rotation and revocation         | Medium   |
 | RBAC Middleware          | Role-based access control using `UserRole` enum                | Medium   |

@@ -9,4 +9,11 @@ export const AI_CONFIG = {
     ollama: env.DEFAULT_MODEL || 'llama3.2',
   },
   ollamaBaseUrl: env.OLLAMA_BASE_URL,
+  context: {
+    maxMessages: 20,
+    maxContextLength: 8000,
+    systemPromptVersion: 'v1.0.0',
+    enableContextDebug: false,
+    defaultAssistantName: 'HiMe OS Assistant',
+  },
 };

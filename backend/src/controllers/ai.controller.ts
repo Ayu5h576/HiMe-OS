@@ -29,22 +29,17 @@ export class AIController {
       content: message,
     });
 
-    // 3. Load conversation history
-    const historyResult = await this.conversationService.getMessages(userId, conversationId, {
-      page: 1,
-      limit: 50,
+    // 3. Build normalized context via ContextBuilder
+    const normalizedPrompt = await this.aiService.buildNormalizedPrompt({
+      userId,
+      conversationId,
+      currentUserMessage: message,
     });
 
-    const conversationHistory = historyResult.data.map((m) => ({
-      role: m.role,
-      content: m.content,
-      metadata: (m.metadata as Record<string, unknown>) ?? undefined,
-    }));
-
-    // 4. Invoke AI Service
+    // 4. Invoke AI Service with normalized prompt package
     const aiResponse = await this.aiService.generateChatResponse({
       prompt: message,
-      conversationHistory,
+      normalizedPrompt,
       provider,
       model,
     });
