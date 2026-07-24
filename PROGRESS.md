@@ -119,7 +119,7 @@ Routes
 ## Phase 8 — Context Builder Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Context Builder module with prompt formatters, history trimming, and AI service pipeline integration*
+**Commit**: `808ee8f` — *Implement Context Builder module with prompt formatters, history trimming, and AI service pipeline integration*
 
 ### What Was Built
 
