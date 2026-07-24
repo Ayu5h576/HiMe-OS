@@ -43,6 +43,36 @@ enum MemoryType {
   SYSTEM
 }
 
+enum TriggerType {
+  MANUAL
+  SCHEDULED
+  TASK_OVERDUE
+  MEMORY_MATCH
+  CONVERSATION_KEYWORD
+}
+
+enum ConditionType {
+  ALWAYS
+  EQUALS
+  CONTAINS
+  GREATER_THAN
+}
+
+enum ActionType {
+  CREATE_TASK
+  UPDATE_TASK_STATUS
+  CREATE_MEMORY
+  SEND_INTERNAL_NOTIFICATION
+  LOG_EVENT
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -72,6 +102,7 @@ model Project {
   tasks         Task[]
   conversations Conversation[]
   memories      Memory[]
+  automations   Automation[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -163,4 +194,48 @@ model Memory {
   @@index([type])
   @@index([importance])
   @@map("memories")
+}
+
+model Automation {
+  id            String        @id @default(cuid())
+  name          String        @db.VarChar(200)
+  description   String?       @db.VarChar(500)
+  enabled       Boolean       @default(true)
+  triggerType   TriggerType   @default(MANUAL)
+  conditionType ConditionType @default(ALWAYS)
+  actionType    ActionType    @default(LOG_EVENT)
+  schedule      String?       @db.VarChar(100)
+  metadata      Json?
+
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  executions    AutomationExecution[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([enabled])
+  @@index([triggerType])
+  @@map("automations")
+}
+
+model AutomationExecution {
+  id           String          @id @default(cuid())
+  status       ExecutionStatus @default(PENDING)
+  executedAt   DateTime        @default(now())
+  input        Json?
+  output       Json?
+  error        String?
+
+  automationId String
+  automation   Automation      @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([automationId])
+  @@index([status])
+  @@map("automation_executions")
 }
