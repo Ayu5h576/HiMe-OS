@@ -6,6 +6,7 @@ import { taskRoutes } from './task.route';
 import { conversationRoutes } from './conversation.route';
 import { memoryRoutes } from './memory.route';
 import { aiRoutes } from './ai.route';
+import { vectorRoutes } from './vector.route';
 
 export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
@@ -15,4 +16,5 @@ export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(conversationRoutes);
   await fastify.register(memoryRoutes);
   await fastify.register(aiRoutes);
+  await fastify.register(vectorRoutes);
 };

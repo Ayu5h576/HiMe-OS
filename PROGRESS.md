@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 24, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 94/94 passing (100% across 8 test suites)  
-> **Total API Endpoints**: 28 Endpoints  
-> **Total Lines of Code Added**: ~6,900+
+> **Total Test Pass Rate**: 103/103 passing (100% across 9 test suites)  
+> **Total API Endpoints**: 31 Endpoints  
+> **Total Lines of Code Added**: ~7,800+
 
 ---
 
@@ -21,12 +21,13 @@
 9. [Phase 6 — Memory Foundation Module](#phase-6--memory-foundation-module)
 10. [Phase 7 — AI Provider Layer Module](#phase-7--ai-provider-layer-module)
 11. [Phase 8 — Context Builder Module](#phase-8--context-builder-module)
-12. [Database Schema](#database-schema)
-13. [API Endpoints Summary](#api-endpoints-summary)
-14. [Test Coverage](#test-coverage)
-15. [File Structure](#file-structure)
-16. [Git Commit History](#git-commit-history)
-17. [What's Next](#whats-next)
+12. [Phase 9 — Vector Search Infrastructure Module](#phase-9--vector-search-infrastructure-module)
+13. [Database Schema](#database-schema)
+14. [API Endpoints Summary](#api-endpoints-summary)
+15. [Test Coverage](#test-coverage)
+16. [File Structure](#file-structure)
+17. [Git Commit History](#git-commit-history)
+18. [What's Next](#whats-next)
 
 ---
 
@@ -45,7 +46,7 @@ The backend is intentionally built module by module, following clean architectur
 | Runtime        | Node.js (v20+)                         |
 | Language       | TypeScript (strict mode)               |
 | Framework      | Fastify                                |
-| Database       | PostgreSQL                             |
+| Database       | PostgreSQL (pgvector enabled)          |
 | ORM            | Prisma                                 |
 | Authentication | JWT (Access + Refresh Tokens)          |
 | Validation     | Zod                                    |
@@ -117,32 +118,46 @@ Routes
 ---
 
 ## Phase 8 — Context Builder Module
+**Status**: ✅ Complete | **Commit**: `808ee8f`
+
+---
+
+## Phase 9 — Vector Search Infrastructure Module
 
 **Status**: ✅ Complete  
-**Commit**: `808ee8f` — *Implement Context Builder module with prompt formatters, history trimming, and AI service pipeline integration*
+**Commit**: Pending — *Implement Vector Search Infrastructure with embeddings, cosine similarity, multi-factor ranking, and reindexing*
 
 ### What Was Built
 
-| Component                    | File(s)                                         |
-| :--------------------------- | :---------------------------------------------- |
-| Project Prompt Formatter     | `src/services/ai/prompt/project.ts`             |
-| Conversation Prompt Formatter| `src/services/ai/prompt/conversation.ts`        |
-| Message Prompt Formatter     | `src/services/ai/prompt/messages.ts`            |
-| System Prompt Builder        | `src/services/ai/prompt/system.ts`              |
-| Context Tokenizer & Trimming | `src/services/ai/tokenizer.ts`                  |
-| Prompt Builder               | `src/services/ai/prompt-builder.ts`             |
-| Context Builder Orchestrator | `src/services/ai/context-builder.ts`            |
-| Context Builder Test Suite   | `tests/context-builder.test.ts`                 |
+| Component                    | File(s)                                                |
+| :--------------------------- | :----------------------------------------------------- |
+| Embedding Interface          | `src/services/ai/vector/embedding.interface.ts`       |
+| OpenAI Embedding Provider    | `src/services/ai/vector/openai-embedding.provider.ts` |
+| Embedding Generator Service  | `src/services/ai/vector/embedding.service.ts`         |
+| Similarity Math Service      | `src/services/ai/vector/similarity.service.ts`        |
+| Multi-Factor Ranking Engine  | `src/services/ai/vector/ranking.service.ts`           |
+| Vector Repository            | `src/services/ai/vector/vector.repository.ts`        |
+| Vector Search Service        | `src/services/ai/vector/vector-search.service.ts`     |
+| Vector Zod & Swagger Schemas | `src/schemas/vector.schema.ts`                         |
+| Vector Controller            | `src/controllers/vector.controller.ts`               |
+| Vector Routes                | `src/routes/vector.route.ts`                          |
+| Vector Test Suite            | `tests/vector.test.ts`                                 |
+
+### API Endpoints
+
+| Method | Endpoint               | Auth Required | Description                                                    |
+| :----- | :--------------------- | :------------ | :------------------------------------------------------------- |
+| `POST` | `/memories/search`     | Yes           | Perform semantic vector search over project memories           |
+| `POST` | `/memories/reindex`    | Yes           | Reindex embeddings for all project memories                    |
+| `GET`  | `/memories/:id/similar`| Yes           | Find semantically similar memories for a given memory ID       |
 
 ### Features & Business Rules
 
-- **Prompt Normalization**: Produces a normalized prompt package (`systemPrompt`, `messages[]`, `metadata`) that AI providers consume without needing to understand database entities directly.
-- **Modular Section Formatters**: Isolated builders for Project workspace info, Conversation metadata, System prompt, and Message history.
-- **Chronological Message Ordering**: Guarantees messages are sorted chronologically ascending before trimming.
-- **Safe History Trimming**: Trims history exceeding `maxMessages` (default 20) or `maxContextLength` (default 8000 chars) without external token library dependencies.
-- **Memory Injection Extension Point**: Explicit placeholder in `SystemPromptBuilder` for future vector search / RAG memory retrieval injection.
-- **Architecture Integration**:
-  `User Request → ConversationService → ContextBuilder → AIService → ProviderManager → Provider`
+- **Embedding Storage**: Stores 1536-dimensional float vector embeddings on the `Memory` model (`embedding Float[]`).
+- **Cosine Similarity Engine**: Computes exact cosine similarity between vector query embeddings and candidate memory vectors.
+- **Multi-Factor Ranking Engine**: Combines cosine similarity (weight: 60%), normalized importance score (weight: 25%), and exponential recency decay (weight: 15%).
+- **Threshold Filtering**: Filters out results below `SIMILARITY_THRESHOLD` (default 0.75).
+- **Project Isolation**: Enforces workspace boundary ownership checks on all vector search requests.
 
 ---
 
@@ -176,7 +191,7 @@ Message ─┬─ id, role, content, metadata, conversationId, createdAt, update
         ├─► belongs to Conversation (conversationId → Conversation.id, onDelete: Cascade)
         └─► has many Memories (optional)
 
-Memory ─┬─ id, title, content, type, importance, tags, metadata, projectId, conversationId, messageId, createdAt, updatedAt
+Memory ─┬─ id, title, content, type, importance, tags, metadata, embedding, projectId, conversationId, messageId, createdAt, updatedAt
        ├─► belongs to Project (projectId → Project.id, onDelete: Cascade)
        ├─► belongs to Conversation (optional, onDelete: SetNull)
        └─► belongs to Message (optional, onDelete: SetNull)
@@ -227,15 +242,20 @@ Memory ─┬─ id, title, content, type, importance, tags, metadata, projectId
 ### 7. AI Provider Layer (1 Endpoint)
 * `POST /ai/chat`
 
-**Total Endpoints**: 28
+### 8. Vector Search Infrastructure (3 Endpoints)
+* `POST /memories/search`
+* `POST /memories/reindex`
+* `GET /memories/:id/similar`
+
+**Total Endpoints**: 31
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  8 passed (8)
-     Tests  94 passed (94)
+Test Files  9 passed (9)
+     Tests  103 passed (103)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -245,6 +265,7 @@ Test Files  8 passed (8)
   ✓ tests/memory.test.ts           (18 tests)
   ✓ tests/ai.test.ts               (9 tests)
   ✓ tests/context-builder.test.ts  (8 tests)
+  ✓ tests/vector.test.ts           (9 tests)
 ```
 
 ---
@@ -254,7 +275,7 @@ Test Files  8 passed (8)
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma                  # Database schema (User, Project, Task, Conversation, Message, Memory)
+│   ├── schema.prisma                  # Database schema with Memory.embedding Float[]
 │   └── migrations/                    # PostgreSQL migration files
 ├── src/
 │   ├── app.ts                         # Fastify app builder
@@ -262,7 +283,7 @@ backend/
 │   ├── config/
 │   │   ├── database.ts                # Prisma client singleton
 │   │   ├── env.ts                     # Environment variables (Zod validated)
-│   │   ├── ai.ts                      # AI layer configuration defaults
+│   │   ├── ai.ts                      # AI layer & Vector configuration defaults
 │   │   └── logger.ts                  # Pino logger config
 │   ├── controllers/
 │   │   ├── auth.controller.ts         # Auth HTTP handlers
@@ -270,7 +291,8 @@ backend/
 │   │   ├── task.controller.ts         # Task HTTP handlers
 │   │   ├── conversation.controller.ts # Conversation & Message HTTP handlers
 │   │   ├── memory.controller.ts       # Memory HTTP handlers
-│   │   └── ai.controller.ts           # AI chat HTTP handlers
+│   │   ├── ai.controller.ts           # AI chat HTTP handlers
+│   │   └── vector.controller.ts       # Vector search HTTP handlers
 │   ├── middleware/
 │   │   ├── auth.ts                    # JWT authenticate middleware
 │   │   ├── errorHandler.ts            # Global error handler
@@ -294,7 +316,8 @@ backend/
 │   │   ├── task.route.ts              # /tasks/* and /projects/:id/tasks routes
 │   │   ├── conversation.route.ts      # /conversations/* and /projects/:id/conversations routes
 │   │   ├── memory.route.ts            # /memories/* and /projects/:id/memories routes
-│   │   └── ai.route.ts                # /ai/* routes
+│   │   ├── ai.route.ts                # /ai/* routes
+│   │   └── vector.route.ts            # /memories/search, reindex, similar routes
 │   ├── schemas/
 │   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas
 │   │   ├── health.schema.ts           # Health Swagger schema
@@ -302,14 +325,15 @@ backend/
 │   │   ├── task.schema.ts             # Task Zod + Swagger schemas
 │   │   ├── conversation.schema.ts     # Conversation Zod + Swagger schemas
 │   │   ├── memory.schema.ts           # Memory Zod + Swagger schemas
-│   │   └── ai.schema.ts               # AI Zod + Swagger schemas
+│   │   ├── ai.schema.ts               # AI Zod + Swagger schemas
+│   │   └── vector.schema.ts           # Vector Zod + Swagger schemas
 │   ├── services/
 │   │   ├── auth.service.ts            # Auth business logic
 │   │   ├── project.service.ts         # Project business logic
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
-│   │   └── ai/                        # AI & Context Builder Layer
+│   │   └── ai/                        # AI & Vector Search Infrastructure
 │   │       ├── context-builder.ts     # Context orchestrator
 │   │       ├── prompt-builder.ts      # Prompt package builder
 │   │       ├── tokenizer.ts           # History trimming logic
@@ -321,15 +345,24 @@ backend/
 │   │       │   ├── project.ts         # Project prompt formatter
 │   │       │   ├── conversation.ts    # Conversation prompt formatter
 │   │       │   └── messages.ts        # Message history formatter
-│   │       └── providers/             # Provider implementations
-│   │           ├── provider.interface.ts # IAIProvider contract
-│   │           ├── openai.provider.ts # OpenAI provider
-│   │           ├── gemini.provider.ts # Google Gemini provider
-│   │           ├── claude.provider.ts # Anthropic Claude provider
-│   │           └── ollama.provider.ts # Local Ollama provider
+│   │       ├── providers/             # Provider implementations
+│   │       │   ├── provider.interface.ts # IAIProvider contract
+│   │       │   ├── openai.provider.ts # OpenAI provider
+│   │       │   ├── gemini.provider.ts # Google Gemini provider
+│   │       │   ├── claude.provider.ts # Anthropic Claude provider
+│   │       │   └── ollama.provider.ts # Local Ollama provider
+│   │       └── vector/                # Vector Search Infrastructure
+│   │           ├── embedding.interface.ts # IEmbeddingProvider contract
+│   │           ├── openai-embedding.provider.ts # OpenAI embedding provider
+│   │           ├── embedding.service.ts   # Embedding generator
+│   │           ├── similarity.service.ts  # Cosine similarity math
+│   │           ├── ranking.service.ts     # Multi-factor ranking engine
+│   │           ├── vector.repository.ts   # Vector repository
+│   │           └── vector-search.service.ts # Vector search orchestrator
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
-│   │   └── ai.ts                      # AI & Context Builder interface types
+│   │   ├── ai.ts                      # AI & Context Builder interface types
+│   │   └── vector.ts                  # Vector search interface types
 │   └── utils/
 │       ├── errors.ts                  # Custom error classes
 │       └── hash.ts                    # bcrypt hashing utility
@@ -341,7 +374,8 @@ backend/
 │   ├── conversation.test.ts           # Conversation & Message tests (20)
 │   ├── memory.test.ts                 # Memory Foundation tests (18)
 │   ├── ai.test.ts                     # AI Provider Layer tests (9)
-│   └── context-builder.test.ts        # Context Builder tests (8)
+│   ├── context-builder.test.ts        # Context Builder tests (8)
+│   └── vector.test.ts                 # Vector Search tests (9)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -359,8 +393,7 @@ The following modules are planned for future implementation:
 
 | Module                  | Purpose                                                        | Priority |
 | :---------------------- | :------------------------------------------------------------- | :------- |
-| Vector Search / pgvector| Semantic embeddings and vector search for Memory retrieval     | High     |
-| RAG Memory Injection    | Plugs vector search results directly into Context Builder      | High     |
+| RAG Memory Pipeline     | Integrates Vector Search directly into Context Builder system prompt | High     |
 | Automation Engine       | Event-driven task/device/memory triggers                       | Medium   |
 | Refresh Token Rotation  | Secure token refresh flow with rotation and revocation         | Medium   |
 | RBAC Middleware          | Role-based access control using `UserRole` enum                | Medium   |

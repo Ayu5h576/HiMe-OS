@@ -16,4 +16,10 @@ export const AI_CONFIG = {
     enableContextDebug: false,
     defaultAssistantName: 'HiMe OS Assistant',
   },
+  vector: {
+    embeddingProvider: env.EMBEDDING_PROVIDER,
+    embeddingModel: env.EMBEDDING_MODEL,
+    maxMemoryResults: env.MAX_MEMORY_RESULTS,
+    similarityThreshold: env.SIMILARITY_THRESHOLD,
+  },
 };

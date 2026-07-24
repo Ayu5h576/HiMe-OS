@@ -44,6 +44,7 @@ export class MemoryRepository {
           importance: data.importance,
           tags: data.tags,
           metadata: (data.metadata as Prisma.JsonValue) ?? null,
+          embedding: [],
           projectId,
           conversationId: data.conversationId ?? null,
           messageId: data.messageId ?? null,

@@ -143,6 +143,7 @@ model Memory {
   importance     Int           @default(1)
   tags           String[]
   metadata       Json?
+  embedding      Float[]
 
   projectId      String
   project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -2,6 +2,7 @@ import '@fastify/jwt';
 import { UserRole } from '@prisma/client';
 
 export * from './ai';
+export * from './vector';
 
 export interface UserPayload {
   id: string;

@@ -25,6 +25,12 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
   DEFAULT_MODEL: z.string().optional(),
+
+  // Vector Search Infrastructure Configuration
+  EMBEDDING_PROVIDER: z.enum(['openai']).default('openai'),
+  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  MAX_MEMORY_RESULTS: z.string().transform(Number).default('10'),
+  SIMILARITY_THRESHOLD: z.string().transform(Number).default('0.75'),
 });
 
 const parseEnv = () => {
