@@ -117,7 +117,7 @@ Routes
 ## Phase 6 — Memory Foundation Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Memory Foundation module with search, type/importance filtering, and full test coverage*
+**Commit**: `7dd9241` — *Implement production-grade Memory Foundation module with full test coverage*
 
 ### What Was Built
 
