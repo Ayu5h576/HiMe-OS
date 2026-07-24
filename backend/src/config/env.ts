@@ -31,6 +31,14 @@ const envSchema = z.object({
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
   MAX_MEMORY_RESULTS: z.string().transform(Number).default('10'),
   SIMILARITY_THRESHOLD: z.string().transform(Number).default('0.75'),
+
+  // RAG Memory Pipeline Configuration
+  ENABLE_RAG: z
+    .string()
+    .transform((val) => val === 'true' || val === '1')
+    .default('true'),
+  MAX_RAG_MEMORIES: z.string().transform(Number).default('10'),
+  MIN_MEMORY_IMPORTANCE: z.string().transform(Number).default('3'),
 });
 
 const parseEnv = () => {

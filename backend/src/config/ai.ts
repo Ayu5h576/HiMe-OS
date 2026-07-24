@@ -22,4 +22,10 @@ export const AI_CONFIG = {
     maxMemoryResults: env.MAX_MEMORY_RESULTS,
     similarityThreshold: env.SIMILARITY_THRESHOLD,
   },
+  rag: {
+    enableRag: env.ENABLE_RAG,
+    maxRagMemories: env.MAX_RAG_MEMORIES,
+    similarityThreshold: env.SIMILARITY_THRESHOLD,
+    minMemoryImportance: env.MIN_MEMORY_IMPORTANCE,
+  },
 };

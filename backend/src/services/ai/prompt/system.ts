@@ -7,7 +7,7 @@ export interface SystemPromptOptions {
   project?: Project;
   conversation?: Conversation;
   customInstructions?: string;
-  memoriesContext?: string; // Extension point for future Memory Retrieval / RAG
+  memoriesContext?: string;
 }
 
 export class SystemPromptBuilder {
@@ -40,9 +40,17 @@ export class SystemPromptBuilder {
       );
     }
 
-    // 4. Memory Injection Placeholder (Extension point for pgvector / RAG memory retrieval)
+    // 4. RAG Memory Injection
     if (options.memoriesContext && options.memoriesContext.trim().length > 0) {
-      sections.push(`--- RELEVANT PROJECT MEMORIES ---\n${options.memoriesContext}`);
+      const trimmed = options.memoriesContext.trim();
+      if (
+        trimmed.includes('=== Relevant Memories ===') ||
+        trimmed.includes('--- RELEVANT PROJECT MEMORIES ---')
+      ) {
+        sections.push(trimmed);
+      } else {
+        sections.push(`--- RELEVANT PROJECT MEMORIES ---\n${trimmed}`);
+      }
     }
 
     // 5. Custom Instructions

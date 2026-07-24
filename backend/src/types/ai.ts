@@ -34,6 +34,8 @@ export interface PromptMetadata {
   systemPromptVersion: string;
   trimmedMessagesCount: number;
   memoryInjectionPoint: boolean;
+  retrievedMemoriesCount?: number;
+  ragEnabled?: boolean;
 }
 
 export interface NormalizedPrompt {

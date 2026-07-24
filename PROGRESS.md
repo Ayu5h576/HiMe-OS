@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 24, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 103/103 passing (100% across 9 test suites)  
+> **Total Test Pass Rate**: 106/106 passing (100% across 10 test suites)  
 > **Total API Endpoints**: 31 Endpoints  
-> **Total Lines of Code Added**: ~7,800+
+> **Total Lines of Code Added**: ~8,300+
 
 ---
 
@@ -22,12 +22,13 @@
 10. [Phase 7 — AI Provider Layer Module](#phase-7--ai-provider-layer-module)
 11. [Phase 8 — Context Builder Module](#phase-8--context-builder-module)
 12. [Phase 9 — Vector Search Infrastructure Module](#phase-9--vector-search-infrastructure-module)
-13. [Database Schema](#database-schema)
-14. [API Endpoints Summary](#api-endpoints-summary)
-15. [Test Coverage](#test-coverage)
-16. [File Structure](#file-structure)
-17. [Git Commit History](#git-commit-history)
-18. [What's Next](#whats-next)
+13. [Phase 10 — RAG Memory Pipeline Module](#phase-10--rag-memory-pipeline-module)
+14. [Database Schema](#database-schema)
+15. [API Endpoints Summary](#api-endpoints-summary)
+16. [Test Coverage](#test-coverage)
+17. [File Structure](#file-structure)
+18. [Git Commit History](#git-commit-history)
+19. [What's Next](#whats-next)
 
 ---
 
@@ -123,41 +124,31 @@ Routes
 ---
 
 ## Phase 9 — Vector Search Infrastructure Module
+**Status**: ✅ Complete | **Commit**: `71a841c`
+
+---
+
+## Phase 10 — RAG Memory Pipeline Module
 
 **Status**: ✅ Complete  
-**Commit**: `71a841c` — *Implement Vector Search Infrastructure with embeddings, cosine similarity, multi-factor ranking, and reindexing*
+**Commit**: Pending — *Implement RAG Memory Pipeline connecting Vector Search into Context Builder with memory deduplication and section formatting*
 
 ### What Was Built
 
-| Component                    | File(s)                                                |
-| :--------------------------- | :----------------------------------------------------- |
-| Embedding Interface          | `src/services/ai/vector/embedding.interface.ts`       |
-| OpenAI Embedding Provider    | `src/services/ai/vector/openai-embedding.provider.ts` |
-| Embedding Generator Service  | `src/services/ai/vector/embedding.service.ts`         |
-| Similarity Math Service      | `src/services/ai/vector/similarity.service.ts`        |
-| Multi-Factor Ranking Engine  | `src/services/ai/vector/ranking.service.ts`           |
-| Vector Repository            | `src/services/ai/vector/vector.repository.ts`        |
-| Vector Search Service        | `src/services/ai/vector/vector-search.service.ts`     |
-| Vector Zod & Swagger Schemas | `src/schemas/vector.schema.ts`                         |
-| Vector Controller            | `src/controllers/vector.controller.ts`               |
-| Vector Routes                | `src/routes/vector.route.ts`                          |
-| Vector Test Suite            | `tests/vector.test.ts`                                 |
-
-### API Endpoints
-
-| Method | Endpoint               | Auth Required | Description                                                    |
-| :----- | :--------------------- | :------------ | :------------------------------------------------------------- |
-| `POST` | `/memories/search`     | Yes           | Perform semantic vector search over project memories           |
-| `POST` | `/memories/reindex`    | Yes           | Reindex embeddings for all project memories                    |
-| `GET`  | `/memories/:id/similar`| Yes           | Find semantically similar memories for a given memory ID       |
+| Component                | File(s)                                            |
+| :----------------------- | :------------------------------------------------- |
+| RAG Config               | `src/config/env.ts`, `src/config/ai.ts`            |
+| RAG Memory Formatter     | `src/services/ai/rag/rag-memory.formatter.ts`     |
+| System Prompt Builder    | `src/services/ai/prompt/system.ts`                |
+| Context Builder          | `src/services/ai/context-builder.ts`               |
+| RAG Test Suite           | `tests/rag.test.ts`                                |
 
 ### Features & Business Rules
 
-- **Embedding Storage**: Stores 1536-dimensional float vector embeddings on the `Memory` model (`embedding Float[]`).
-- **Cosine Similarity Engine**: Computes exact cosine similarity between vector query embeddings and candidate memory vectors.
-- **Multi-Factor Ranking Engine**: Combines cosine similarity (weight: 60%), normalized importance score (weight: 25%), and exponential recency decay (weight: 15%).
-- **Threshold Filtering**: Filters out results below `SIMILARITY_THRESHOLD` (default 0.75).
-- **Project Isolation**: Enforces workspace boundary ownership checks on all vector search requests.
+- **Automated Memory Retrieval**: Automatically retrieves top semantic memories for user prompts during `POST /ai/chat`.
+- **Deduplication & Quality Filtering**: Filters out duplicate memories, near-identical text, and memories below `MIN_MEMORY_IMPORTANCE` (3) or `SIMILARITY_THRESHOLD` (0.75).
+- **Structured Section Formatting**: Formats retrieved memories under explicit headers (`=== Relevant Memories ===`).
+- **Provider Agnosticism**: AI Providers continue consuming `NormalizedPrompt` without needing to understand memory retrieval mechanics.
 
 ---
 
@@ -254,8 +245,8 @@ Memory ─┬─ id, title, content, type, importance, tags, metadata, embedding
 ## Test Coverage
 
 ```
-Test Files  9 passed (9)
-     Tests  103 passed (103)
+Test Files  10 passed (10)
+     Tests  106 passed (106)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -266,6 +257,7 @@ Test Files  9 passed (9)
   ✓ tests/ai.test.ts               (9 tests)
   ✓ tests/context-builder.test.ts  (8 tests)
   ✓ tests/vector.test.ts           (9 tests)
+  ✓ tests/rag.test.ts              (3 tests)
 ```
 
 ---
@@ -283,7 +275,7 @@ backend/
 │   ├── config/
 │   │   ├── database.ts                # Prisma client singleton
 │   │   ├── env.ts                     # Environment variables (Zod validated)
-│   │   ├── ai.ts                      # AI layer & Vector configuration defaults
+│   │   ├── ai.ts                      # AI layer, Vector & RAG configuration defaults
 │   │   └── logger.ts                  # Pino logger config
 │   ├── controllers/
 │   │   ├── auth.controller.ts         # Auth HTTP handlers
@@ -333,7 +325,7 @@ backend/
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
-│   │   └── ai/                        # AI & Vector Search Infrastructure
+│   │   └── ai/                        # AI, RAG & Vector Search Infrastructure
 │   │       ├── context-builder.ts     # Context orchestrator
 │   │       ├── prompt-builder.ts      # Prompt package builder
 │   │       ├── tokenizer.ts           # History trimming logic
@@ -351,6 +343,8 @@ backend/
 │   │       │   ├── gemini.provider.ts # Google Gemini provider
 │   │       │   ├── claude.provider.ts # Anthropic Claude provider
 │   │       │   └── ollama.provider.ts # Local Ollama provider
+│   │       ├── rag/                   # RAG Memory Pipeline
+│   │       │   └── rag-memory.formatter.ts # Deduplication & RAG formatting
 │   │       └── vector/                # Vector Search Infrastructure
 │   │           ├── embedding.interface.ts # IEmbeddingProvider contract
 │   │           ├── openai-embedding.provider.ts # OpenAI embedding provider
@@ -361,7 +355,7 @@ backend/
 │   │           └── vector-search.service.ts # Vector search orchestrator
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
-│   │   ├── ai.ts                      # AI & Context Builder interface types
+│   │   ├── ai.ts                      # AI, Context Builder & RAG interface types
 │   │   └── vector.ts                  # Vector search interface types
 │   └── utils/
 │       ├── errors.ts                  # Custom error classes
@@ -375,7 +369,8 @@ backend/
 │   ├── memory.test.ts                 # Memory Foundation tests (18)
 │   ├── ai.test.ts                     # AI Provider Layer tests (9)
 │   ├── context-builder.test.ts        # Context Builder tests (8)
-│   └── vector.test.ts                 # Vector Search tests (9)
+│   ├── vector.test.ts                 # Vector Search tests (9)
+│   └── rag.test.ts                    # RAG Memory Pipeline tests (3)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -393,8 +388,8 @@ The following modules are planned for future implementation:
 
 | Module                  | Purpose                                                        | Priority |
 | :---------------------- | :------------------------------------------------------------- | :------- |
-| RAG Memory Pipeline     | Integrates Vector Search directly into Context Builder system prompt | High     |
-| Automation Engine       | Event-driven task/device/memory triggers                       | Medium   |
+| Automation Engine       | Event-driven task/device/memory triggers                       | High     |
+| Tool Calling Framework  | Enables AI assistant to trigger system tools & functions       | High     |
 | Refresh Token Rotation  | Secure token refresh flow with rotation and revocation         | Medium   |
 | RBAC Middleware          | Role-based access control using `UserRole` enum                | Medium   |
 | IoT Device Module       | Smart device registration, status, and control                 | Low      |
