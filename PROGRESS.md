@@ -1,10 +1,10 @@
 # HiMe OS — Backend Development Progress Report
 
-> **Last Updated**: July 24, 2026  
+> **Last Updated**: July 25, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 119/119 passing (100% across 11 test suites)  
+> **Total Test Pass Rate**: 136/136 passing (100% across 12 test suites)  
 > **Total API Endpoints**: 38 Endpoints  
-> **Total Lines of Code Added**: ~9,600+
+> **Total Lines of Code Added**: ~10,800+
 
 ---
 
@@ -24,12 +24,13 @@
 12. [Phase 9 — Vector Search Infrastructure Module](#phase-9--vector-search-infrastructure-module)
 13. [Phase 10 — RAG Memory Pipeline Module](#phase-10--rag-memory-pipeline-module)
 14. [Phase 11 — Automation Engine Module](#phase-11--automation-engine-module)
-15. [Database Schema](#database-schema)
-16. [API Endpoints Summary](#api-endpoints-summary)
-17. [Test Coverage](#test-coverage)
-18. [File Structure](#file-structure)
-19. [Git Commit History](#git-commit-history)
-20. [What's Next](#whats-next)
+15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
+16. [Database Schema](#database-schema)
+17. [API Endpoints Summary](#api-endpoints-summary)
+18. [Test Coverage](#test-coverage)
+19. [File Structure](#file-structure)
+20. [Git Commit History](#git-commit-history)
+21. [What's Next](#whats-next)
 
 ---
 
@@ -135,28 +136,32 @@ Routes
 ---
 
 ## Phase 11 — Automation Engine Module
+**Status**: ✅ Complete | **Commit**: `f0ded41`
+
+---
+
+## Phase 12 — Tool Calling Framework Module
 
 **Status**: ✅ Complete  
-**Commit**: `f0ded41` — *Implement Automation Engine supporting rule creation, evaluation, action execution, and execution log persistence*
+**Commit**: Pending — *Implement Tool Calling Framework enabling AI providers to execute backend capabilities via Service Layer*
 
 ### What Was Built
 
 | Component                | File(s)                                                       |
 | :----------------------- | :------------------------------------------------------------ |
-| Prisma Schema            | `prisma/schema.prisma`                                        |
-| Zod & Swagger Schemas    | `src/schemas/automation.schema.ts`                            |
-| Repositories             | `src/repositories/automation.repository.ts`, `automation-execution.repository.ts` |
-| Automation Services      | `src/services/automation/*.ts`                                |
-| Controller & Routes      | `src/controllers/automation.controller.ts`, `src/routes/automation.route.ts` |
-| Vitest Test Suite        | `tests/automation.test.ts`                                    |
+| Tool Core Interfaces     | `src/services/ai/tools/tool.interface.ts`, `tool-response.ts` |
+| Tool Registry & Executor | `src/services/ai/tools/tool-registry.ts`, `tool-executor.ts` |
+| Parameter Validator      | `src/services/ai/tools/tool-validator.ts`                    |
+| Domain System Tools      | `src/services/ai/tools/task.tools.ts`, `memory.tools.ts`, `project.tools.ts`, `conversation.tools.ts`, `automation.tools.ts` |
+| System Prompt Integration| `src/services/ai/prompt/system.ts`                            |
+| Vitest Test Suite        | `tests/tools.test.ts`                                         |
 
 ### Features & Business Rules
 
-- **Automation Rules CRUD**: Supports project-scoped automation rule management (`POST`, `GET`, `PATCH`, `DELETE`).
-- **Trigger Evaluation Engine**: Evaluates trigger types (`MANUAL`, `SCHEDULED`, `TASK_OVERDUE`, `MEMORY_MATCH`, `CONVERSATION_KEYWORD`) and condition logic (`ALWAYS`, `EQUALS`, `CONTAINS`, `GREATER_THAN`).
-- **Action Execution Engine**: Executes internal system actions (`CREATE_TASK`, `UPDATE_TASK_STATUS`, `CREATE_MEMORY`, `SEND_INTERNAL_NOTIFICATION`, `LOG_EVENT`).
-- **Execution Log Persistence**: Records execution lifecycle events (`PENDING`, `RUNNING`, `SUCCESS`, `FAILED`) with input, output, and error tracebacks.
-- **Project Ownership Isolation**: Enforces project authorization; disabled rules are prevented from executing.
+- **Provider Isolation**: AI models interact with standardized tool interfaces; business logic executes via existing Service layer.
+- **Zod Parameter Validation**: Validates tool arguments before execution, returning clear validation errors on bad input.
+- **User Ownership Authorization**: Enforces strict user project authorization across all tool calls (`TaskService`, `MemoryService`, `ProjectService`, `ConversationService`, `AutomationService`).
+- **Normalized Response Contract**: Returns structured `IToolResponse` objects (`toolName`, `success`, `result`, `error`, `executedAt`).
 
 ---
 
@@ -274,8 +279,8 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 ## Test Coverage
 
 ```
-Test Files  11 passed (11)
-     Tests  119 passed (119)
+Test Files  12 passed (12)
+     Tests  136 passed (136)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -288,6 +293,7 @@ Test Files  11 passed (11)
   ✓ tests/vector.test.ts           (9 tests)
   ✓ tests/rag.test.ts              (3 tests)
   ✓ tests/automation.test.ts       (13 tests)
+  ✓ tests/tools.test.ts            (17 tests)
 ```
 
 ---
@@ -361,12 +367,19 @@ backend/
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
+│   │   │   └── tools/                 # Tool Calling Framework
+│   │   │       ├── tool.interface.ts  # ITool contract
+│   │   │       ├── tool-response.ts   # IToolResponse & formatter
+│   │   │       ├── tool-validator.ts  # Parameter validator
+│   │   │       ├── tool-registry.ts   # Tool registry
+│   │   │       ├── tool-executor.ts   # Tool executor
+│   │   │       ├── task.tools.ts      # Task system tools
+│   │   │       ├── memory.tools.ts    # Memory system tools
+│   │   │       ├── project.tools.ts   # Project system tools
+│   │   │       ├── conversation.tools.ts # Conversation system tools
+│   │   │       ├── automation.tools.ts   # Automation system tools
+│   │   │       └── index.ts           # Tools barrel export
 │   │   └── automation/                # Automation Engine Module
-│   │       ├── trigger-evaluator.service.ts # Trigger & condition evaluator
-│   │       ├── action-runner.service.ts     # Internal action executor
-│   │       ├── scheduler.service.ts         # Cron schedule validator
-│   │       ├── automation-execution.service.ts # Execution log service
-│   │       └── automation.service.ts        # Automation orchestrator
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
 │   │   ├── ai.ts                      # AI, Context Builder & RAG interface types
@@ -385,7 +398,8 @@ backend/
 │   ├── context-builder.test.ts        # Context Builder tests (8)
 │   ├── vector.test.ts                 # Vector Search tests (9)
 │   ├── rag.test.ts                    # RAG Memory Pipeline tests (3)
-│   └── automation.test.ts             # Automation Engine tests (13)
+│   ├── automation.test.ts             # Automation Engine tests (13)
+│   └── tools.test.ts                  # Tool Calling Framework tests (17)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -403,7 +417,6 @@ The following modules are planned for future implementation:
 
 | Module                  | Purpose                                                        | Priority |
 | :---------------------- | :------------------------------------------------------------- | :------- |
-| Tool Calling Framework  | Enables AI assistant to trigger system tools & functions       | High     |
 | Refresh Token Rotation  | Secure token refresh flow with rotation and revocation         | Medium   |
 | RBAC Middleware          | Role-based access control using `UserRole` enum                | Medium   |
 | IoT Device Module       | Smart device registration, status, and control                 | Low      |

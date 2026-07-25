@@ -12,4 +12,5 @@ export * from './tokenizer';
 export * from './prompt-builder';
 export * from './context-builder';
 export * from './rag/rag-memory.formatter';
+export * from './tools';
 export * from './ai.service';

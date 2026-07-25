@@ -1,6 +1,7 @@
 import { Project, Conversation } from '@prisma/client';
 import { ProjectPromptFormatter } from './project';
 import { ConversationPromptFormatter } from './conversation';
+import { ToolRegistry } from '../tools/tool-registry';
 import { AI_CONFIG } from '../../../config/ai';
 
 export interface SystemPromptOptions {
@@ -8,6 +9,7 @@ export interface SystemPromptOptions {
   conversation?: Conversation;
   customInstructions?: string;
   memoriesContext?: string;
+  enableTools?: boolean;
 }
 
 export class SystemPromptBuilder {
@@ -53,7 +55,17 @@ export class SystemPromptBuilder {
       }
     }
 
-    // 5. Custom Instructions
+    // 5. Available Tools
+    const shouldEnableTools = options.enableTools ?? true;
+    if (shouldEnableTools) {
+      const toolDefs = ToolRegistry.getInstance().getToolDefinitions();
+      if (toolDefs.length > 0) {
+        const toolsFormatted = toolDefs.map((t) => `- ${t.name}: ${t.description}`).join('\n');
+        sections.push(`--- AVAILABLE HIME OS TOOLS ---\n${toolsFormatted}`);
+      }
+    }
+
+    // 6. Custom Instructions
     if (options.customInstructions) {
       sections.push(`--- ADDITIONAL INSTRUCTIONS ---\n${options.customInstructions}`);
     }

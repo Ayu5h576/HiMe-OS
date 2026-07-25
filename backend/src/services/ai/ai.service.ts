@@ -1,17 +1,26 @@
 import { ProviderManager } from './provider-manager';
 import { ContextBuilder } from './context-builder';
+import { ToolExecutor } from './tools/tool-executor';
+import { ToolRegistry } from './tools/tool-registry';
+import { IToolResponse } from './tools/tool-response';
 import { GenerateOptions, NormalizedAIResponse, NormalizedPrompt } from '../../types/ai';
 
 export class AIService {
   private providerManager: ProviderManager;
   private contextBuilder: ContextBuilder;
+  private toolExecutor: ToolExecutor;
+  private toolRegistry: ToolRegistry;
 
   constructor(
     providerManager: ProviderManager = new ProviderManager(),
     contextBuilder: ContextBuilder = new ContextBuilder(),
+    toolExecutor: ToolExecutor = new ToolExecutor(),
+    toolRegistry: ToolRegistry = ToolRegistry.getInstance(),
   ) {
     this.providerManager = providerManager;
     this.contextBuilder = contextBuilder;
+    this.toolExecutor = toolExecutor;
+    this.toolRegistry = toolRegistry;
   }
 
   async buildNormalizedPrompt(input: {
@@ -31,11 +40,23 @@ export class AIService {
     return provider.generateResponse(options);
   }
 
+  async executeToolCall(toolName: string, userId: string, params: unknown): Promise<IToolResponse> {
+    return this.toolExecutor.executeTool(toolName, userId, params);
+  }
+
   getProviderManager(): ProviderManager {
     return this.providerManager;
   }
 
   getContextBuilder(): ContextBuilder {
     return this.contextBuilder;
+  }
+
+  getToolExecutor(): ToolExecutor {
+    return this.toolExecutor;
+  }
+
+  getToolRegistry(): ToolRegistry {
+    return this.toolRegistry;
   }
 }
