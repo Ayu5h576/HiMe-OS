@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 25, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 136/136 passing (100% across 12 test suites)  
-> **Total API Endpoints**: 38 Endpoints  
-> **Total Lines of Code Added**: ~10,800+
+> **Total Test Pass Rate**: 148/148 passing (100% across 13 test suites)  
+> **Total API Endpoints**: 40 Endpoints  
+> **Total Lines of Code Added**: ~12,000+
 
 ---
 
@@ -25,11 +25,11 @@
 13. [Phase 10 — RAG Memory Pipeline Module](#phase-10--rag-memory-pipeline-module)
 14. [Phase 11 — Automation Engine Module](#phase-11--automation-engine-module)
 15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
-16. [Database Schema](#database-schema)
-17. [API Endpoints Summary](#api-endpoints-summary)
-18. [Test Coverage](#test-coverage)
-19. [File Structure](#file-structure)
-20. [Git Commit History](#git-commit-history)
+16. [Phase 13 — Refresh Token Rotation Module](#phase-13--refresh-token-rotation-module)
+17. [Database Schema](#database-schema)
+18. [API Endpoints Summary](#api-endpoints-summary)
+19. [Test Coverage](#test-coverage)
+20. [File Structure](#file-structure)
 21. [What's Next](#whats-next)
 
 ---
@@ -54,7 +54,7 @@ The backend is intentionally built module by module, following clean architectur
 | Authentication | JWT (Access + Refresh Tokens)          |
 | Validation     | Zod                                    |
 | Documentation  | Swagger / OpenAPI (`@fastify/swagger`) |
-| Hashing        | bcrypt                                 |
+| Hashing        | bcrypt & SHA-256                      |
 | Logging        | Pino (via Fastify)                     |
 | Testing        | Vitest                                 |
 | Linting        | ESLint                                 |
@@ -141,27 +141,35 @@ Routes
 ---
 
 ## Phase 12 — Tool Calling Framework Module
+**Status**: ✅ Complete | **Commit**: `82b0f65`
+
+---
+
+## Phase 13 — Refresh Token Rotation Module
 
 **Status**: ✅ Complete  
-**Commit**: `82b0f65` — *Implement Tool Calling Framework enabling AI providers to execute backend capabilities via Service Layer*
+**Commit**: `e6cf213` — *Implement Refresh Token Rotation with family-based reuse detection, SHA-256 hashing, and session revocation*
 
 ### What Was Built
 
-| Component                | File(s)                                                       |
-| :----------------------- | :------------------------------------------------------------ |
-| Tool Core Interfaces     | `src/services/ai/tools/tool.interface.ts`, `tool-response.ts` |
-| Tool Registry & Executor | `src/services/ai/tools/tool-registry.ts`, `tool-executor.ts` |
-| Parameter Validator      | `src/services/ai/tools/tool-validator.ts`                    |
-| Domain System Tools      | `src/services/ai/tools/task.tools.ts`, `memory.tools.ts`, `project.tools.ts`, `conversation.tools.ts`, `automation.tools.ts` |
-| System Prompt Integration| `src/services/ai/prompt/system.ts`                            |
-| Vitest Test Suite        | `tests/tools.test.ts`                                         |
+| Component                    | File(s)                                                  |
+| :--------------------------- | :------------------------------------------------------- |
+| Database Schema              | `prisma/schema.prisma` (`RefreshToken` model)            |
+| Hashing Utility              | `src/utils/hash.ts` (`hashToken` SHA-256)               |
+| Refresh Token Repository     | `src/repositories/refresh-token.repository.ts`          |
+| Refresh Token Service        | `src/services/refresh-token.service.ts`                  |
+| Auth Service & Controller    | `src/services/auth.service.ts`, `src/controllers/auth.controller.ts` |
+| Zod & Swagger Schemas        | `src/schemas/auth.schema.ts` (`refreshSchema`, `logoutSchema`) |
+| Routes                       | `src/routes/auth.route.ts` (`POST /auth/refresh`, `POST /auth/logout`) |
+| Vitest Integration Test Suite| `tests/refresh-token.test.ts` (12 tests)                  |
 
-### Features & Business Rules
+### Features & Security Rules
 
-- **Provider Isolation**: AI models interact with standardized tool interfaces; business logic executes via existing Service layer.
-- **Zod Parameter Validation**: Validates tool arguments before execution, returning clear validation errors on bad input.
-- **User Ownership Authorization**: Enforces strict user project authorization across all tool calls (`TaskService`, `MemoryService`, `ProjectService`, `ConversationService`, `AutomationService`).
-- **Normalized Response Contract**: Returns structured `IToolResponse` objects (`toolName`, `success`, `result`, `error`, `executedAt`).
+- **Database-backed Refresh Tokens**: Stored safely in PostgreSQL using SHA-256 hashes (never raw tokens).
+- **Token Family Tracking (`familyId`)**: Group tokens in a rotation chain to track lineage.
+- **Automatic Reuse Detection**: If an old (already rotated) token is reused, the entire token family is immediately revoked to protect against token theft.
+- **Idempotent Revocation & Logout**: `POST /auth/logout` invalidates the active refresh token session safely.
+- **Provider Secret Isolation**: Refresh tokens use `JWT_REFRESH_SECRET` distinct from short-lived access tokens.
 
 ---
 
@@ -179,7 +187,11 @@ enum ActionType      { CREATE_TASK | UPDATE_TASK_STATUS | CREATE_MEMORY | SEND_I
 enum ExecutionStatus { PENDING | RUNNING | SUCCESS | FAILED }
 
 User ─┬─ id, email, password, name, role, isActive, createdAt, updatedAt
-      └─► has many Projects
+      ├─► has many Projects
+      └─► has many RefreshTokens
+
+RefreshToken ─┬─ id, tokenHash, jti, familyId, userId, expiresAt, revokedAt, replacedByTokenId, createdAt, updatedAt
+             └─► belongs to User (userId → User.id, onDelete: Cascade)
 
 Project ─┬─ id, name, description, color, icon, isArchived, ownerId, createdAt, updatedAt
          ├─► belongs to User (ownerId → User.id, onDelete: Cascade)
@@ -220,10 +232,12 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 ### 1. Health (1 Endpoint)
 * `GET /health`
 
-### 2. Authentication (3 Endpoints)
+### 2. Authentication & Sessions (5 Endpoints)
 * `POST /auth/register`
 * `POST /auth/login`
 * `GET /auth/me`
+* `POST /auth/refresh`
+* `POST /auth/logout`
 
 ### 3. Projects (5 Endpoints)
 * `POST /projects`
@@ -272,15 +286,15 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 * `POST /automations/:id/run`
 * `GET /automations/:id/executions`
 
-**Total Endpoints**: 38
+**Total Endpoints**: 40
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  12 passed (12)
-     Tests  136 passed (136)
+Test Files  13 passed (13)
+     Tests  148 passed (148)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -294,6 +308,7 @@ Test Files  12 passed (12)
   ✓ tests/rag.test.ts              (3 tests)
   ✓ tests/automation.test.ts       (13 tests)
   ✓ tests/tools.test.ts            (17 tests)
+  ✓ tests/refresh-token.test.ts    (12 tests)
 ```
 
 ---
@@ -303,7 +318,7 @@ Test Files  12 passed (12)
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma                  # Database schema with Automation & AutomationExecution
+│   ├── schema.prisma                  # Database schema with RefreshToken, Automation & Execution models
 │   └── migrations/                    # PostgreSQL migration files
 ├── src/
 │   ├── app.ts                         # Fastify app builder
@@ -314,7 +329,7 @@ backend/
 │   │   ├── ai.ts                      # AI layer, Vector & RAG configuration defaults
 │   │   └── logger.ts                  # Pino logger config
 │   ├── controllers/
-│   │   ├── auth.controller.ts         # Auth HTTP handlers
+│   │   ├── auth.controller.ts         # Auth HTTP handlers (register, login, refresh, logout, me)
 │   │   ├── project.controller.ts      # Project HTTP handlers
 │   │   ├── task.controller.ts         # Task HTTP handlers
 │   │   ├── conversation.controller.ts # Conversation & Message HTTP handlers
@@ -332,6 +347,7 @@ backend/
 │   │   └── swagger.ts                 # @fastify/swagger plugin
 │   ├── repositories/
 │   │   ├── user.repository.ts         # User data access layer
+│   │   ├── refresh-token.repository.ts# Refresh token data access layer
 │   │   ├── project.repository.ts      # Project data access layer
 │   │   ├── task.repository.ts         # Task data access layer
 │   │   ├── conversation.repository.ts # Conversation data access layer
@@ -342,7 +358,7 @@ backend/
 │   ├── routes/
 │   │   ├── index.ts                   # Route aggregator
 │   │   ├── health.route.ts            # GET /health
-│   │   ├── auth.route.ts              # /auth/* routes
+│   │   ├── auth.route.ts              # /auth/* routes (register, login, refresh, logout, me)
 │   │   ├── project.route.ts           # /projects/* routes
 │   │   ├── task.route.ts              # /tasks/* and /projects/:id/tasks routes
 │   │   ├── conversation.route.ts      # /conversations/* and /projects/:id/conversations routes
@@ -351,7 +367,7 @@ backend/
 │   │   ├── vector.route.ts            # /memories/search, reindex, similar routes
 │   │   └── automation.route.ts        # /automations/* and /projects/:id/automations routes
 │   ├── schemas/
-│   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas
+│   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas (includes refresh & logout)
 │   │   ├── health.schema.ts           # Health Swagger schema
 │   │   ├── project.schema.ts          # Project Zod + Swagger schemas
 │   │   ├── task.schema.ts             # Task Zod + Swagger schemas
@@ -362,23 +378,13 @@ backend/
 │   │   └── automation.schema.ts       # Automation Zod + Swagger schemas
 │   ├── services/
 │   │   ├── auth.service.ts            # Auth business logic
+│   │   ├── refresh-token.service.ts   # Refresh token lifecycle & reuse detection logic
 │   │   ├── project.service.ts         # Project business logic
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
 │   │   │   └── tools/                 # Tool Calling Framework
-│   │   │       ├── tool.interface.ts  # ITool contract
-│   │   │       ├── tool-response.ts   # IToolResponse & formatter
-│   │   │       ├── tool-validator.ts  # Parameter validator
-│   │   │       ├── tool-registry.ts   # Tool registry
-│   │   │       ├── tool-executor.ts   # Tool executor
-│   │   │       ├── task.tools.ts      # Task system tools
-│   │   │       ├── memory.tools.ts    # Memory system tools
-│   │   │       ├── project.tools.ts   # Project system tools
-│   │   │       ├── conversation.tools.ts # Conversation system tools
-│   │   │       ├── automation.tools.ts   # Automation system tools
-│   │   │       └── index.ts           # Tools barrel export
 │   │   └── automation/                # Automation Engine Module
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
@@ -386,7 +392,7 @@ backend/
 │   │   └── vector.ts                  # Vector search interface types
 │   └── utils/
 │       ├── errors.ts                  # Custom error classes
-│       └── hash.ts                    # bcrypt hashing utility
+│       └── hash.ts                    # bcrypt & SHA-256 hashing utilities
 ├── tests/
 │   ├── health.test.ts                 # Health endpoint tests (2)
 │   ├── auth.test.ts                   # Authentication tests (9)
@@ -399,7 +405,8 @@ backend/
 │   ├── vector.test.ts                 # Vector Search tests (9)
 │   ├── rag.test.ts                    # RAG Memory Pipeline tests (3)
 │   ├── automation.test.ts             # Automation Engine tests (13)
-│   └── tools.test.ts                  # Tool Calling Framework tests (17)
+│   ├── tools.test.ts                  # Tool Calling Framework tests (17)
+│   └── refresh-token.test.ts          # Refresh Token Rotation tests (12)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -415,11 +422,10 @@ backend/
 
 The following modules are planned for future implementation:
 
-| Module                  | Purpose                                                        | Priority |
-| :---------------------- | :------------------------------------------------------------- | :------- |
-| Refresh Token Rotation  | Secure token refresh flow with rotation and revocation         | Medium   |
-| RBAC Middleware          | Role-based access control using `UserRole` enum                | Medium   |
-| IoT Device Module       | Smart device registration, status, and control                 | Low      |
+| Module            | Purpose                                                          | Status / Issue |
+| :---------------- | :--------------------------------------------------------------- | :------------- |
+| RBAC Middleware   | Role-based access control using `UserRole` enum (`USER` \| `ADMIN`) | Issue [#6](https://github.com/Ayu5h576/HiMe-OS/issues/6) |
+| IoT Device Module | Smart device registration, status monitoring, and control        | Planned        |
 
 ---
 
