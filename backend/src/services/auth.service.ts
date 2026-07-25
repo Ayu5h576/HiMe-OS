@@ -4,14 +4,20 @@ import { RegisterInput, LoginInput } from '../schemas/auth.schema';
 import { hashPassword, comparePassword } from '../utils/hash';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../utils/errors';
 import { AuthResponse, UserResponse, UserPayload } from '../types';
+import { RefreshTokenService, SignJwtFunction, VerifyJwtFunction } from './refresh-token.service';
 
-export type SignJwtFunction = (payload: UserPayload, options?: { expiresIn?: string }) => string;
+export { SignJwtFunction };
 
 export class AuthService {
   private userRepo: UserRepository;
+  private refreshTokenService: RefreshTokenService;
 
-  constructor(userRepo: UserRepository = new UserRepository()) {
+  constructor(
+    userRepo: UserRepository = new UserRepository(),
+    refreshTokenService: RefreshTokenService = new RefreshTokenService(),
+  ) {
     this.userRepo = userRepo;
+    this.refreshTokenService = refreshTokenService;
   }
 
   private mapUserToResponse(user: User): UserResponse {
@@ -26,10 +32,7 @@ export class AuthService {
     };
   }
 
-  private generateTokens(
-    user: User,
-    signJwt: SignJwtFunction,
-  ): { accessToken: string; refreshToken: string } {
+  private generateAccessToken(user: User, signJwt: SignJwtFunction): string {
     const payload: UserPayload = {
       id: user.id,
       email: user.email,
@@ -38,14 +41,14 @@ export class AuthService {
       isActive: user.isActive,
     };
 
-    const accessToken = signJwt(payload);
-    // Extension point for refresh tokens: signed with 7d expiry
-    const refreshToken = signJwt(payload, { expiresIn: '7d' });
-
-    return { accessToken, refreshToken };
+    return signJwt(payload);
   }
 
-  async register(input: RegisterInput, signJwt: SignJwtFunction): Promise<AuthResponse> {
+  async register(
+    input: RegisterInput,
+    signJwt: SignJwtFunction,
+    signRefreshJwt: SignJwtFunction,
+  ): Promise<AuthResponse> {
     const existingUser = await this.userRepo.findByEmail(input.email);
     if (existingUser) {
       throw new ConflictError('User with this email already exists');
@@ -61,7 +64,8 @@ export class AuthService {
       isActive: true,
     });
 
-    const { accessToken, refreshToken } = this.generateTokens(user, signJwt);
+    const accessToken = this.generateAccessToken(user, signJwt);
+    const refreshToken = await this.refreshTokenService.issueRefreshToken(user, signRefreshJwt);
 
     return {
       user: this.mapUserToResponse(user),
@@ -70,7 +74,11 @@ export class AuthService {
     };
   }
 
-  async login(input: LoginInput, signJwt: SignJwtFunction): Promise<AuthResponse> {
+  async login(
+    input: LoginInput,
+    signJwt: SignJwtFunction,
+    signRefreshJwt: SignJwtFunction,
+  ): Promise<AuthResponse> {
     const user = await this.userRepo.findByEmail(input.email);
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
@@ -85,13 +93,32 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    const { accessToken, refreshToken } = this.generateTokens(user, signJwt);
+    const accessToken = this.generateAccessToken(user, signJwt);
+    const refreshToken = await this.refreshTokenService.issueRefreshToken(user, signRefreshJwt);
 
     return {
       user: this.mapUserToResponse(user),
       accessToken,
       refreshToken,
     };
+  }
+
+  async refresh(
+    rawRefreshToken: string,
+    verifyRefreshJwt: VerifyJwtFunction,
+    signAccessJwt: SignJwtFunction,
+    signRefreshJwt: SignJwtFunction,
+  ): Promise<AuthResponse> {
+    return this.refreshTokenService.rotateRefreshToken(
+      rawRefreshToken,
+      verifyRefreshJwt,
+      signAccessJwt,
+      signRefreshJwt,
+    );
+  }
+
+  async logout(rawRefreshToken: string, verifyRefreshJwt: VerifyJwtFunction): Promise<void> {
+    await this.refreshTokenService.revokeRefreshToken(rawRefreshToken, verifyRefreshJwt);
   }
 
   async getProfile(userId: string): Promise<UserResponse> {

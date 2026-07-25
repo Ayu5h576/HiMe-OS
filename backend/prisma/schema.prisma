@@ -83,7 +83,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects  Project[]
+  projects       Project[]
+  refreshTokens  RefreshToken[]
 
   @@map("users")
 }
@@ -238,4 +239,24 @@ model AutomationExecution {
   @@index([automationId])
   @@index([status])
   @@map("automation_executions")
+}
+
+model RefreshToken {
+  id                String    @id @default(cuid())
+  tokenHash         String    @unique
+  jti               String    @unique
+  familyId          String
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
