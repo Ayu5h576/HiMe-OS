@@ -143,7 +143,7 @@ Routes
 ## Phase 12 — Tool Calling Framework Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Tool Calling Framework enabling AI providers to execute backend capabilities via Service Layer*
+**Commit**: `82b0f65` — *Implement Tool Calling Framework enabling AI providers to execute backend capabilities via Service Layer*
 
 ### What Was Built
 
