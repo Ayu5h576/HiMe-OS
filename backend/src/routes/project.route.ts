@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { ProjectController } from '../controllers/project.controller';
 import { authenticate } from '../middleware/auth';
+import { authorize } from '../middleware/authorize';
 import {
   createProjectSwaggerSchema,
   getProjectsSwaggerSchema,
@@ -14,31 +15,31 @@ export const projectRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.post(
     '/projects',
-    { schema: createProjectSwaggerSchema, preHandler: [authenticate] },
+    { schema: createProjectSwaggerSchema, preHandler: [authenticate, authorize('project:create')] },
     controller.createProject,
   );
 
   fastify.get(
     '/projects',
-    { schema: getProjectsSwaggerSchema, preHandler: [authenticate] },
+    { schema: getProjectsSwaggerSchema, preHandler: [authenticate, authorize('project:read')] },
     controller.getUserProjects,
   );
 
   fastify.get(
     '/projects/:id',
-    { schema: getProjectByIdSwaggerSchema, preHandler: [authenticate] },
+    { schema: getProjectByIdSwaggerSchema, preHandler: [authenticate, authorize('project:read')] },
     controller.getProjectById,
   );
 
   fastify.patch(
     '/projects/:id',
-    { schema: updateProjectSwaggerSchema, preHandler: [authenticate] },
+    { schema: updateProjectSwaggerSchema, preHandler: [authenticate, authorize('project:update')] },
     controller.updateProject,
   );
 
   fastify.delete(
     '/projects/:id',
-    { schema: deleteProjectSwaggerSchema, preHandler: [authenticate] },
+    { schema: deleteProjectSwaggerSchema, preHandler: [authenticate, authorize('project:delete')] },
     controller.deleteProject,
   );
 };

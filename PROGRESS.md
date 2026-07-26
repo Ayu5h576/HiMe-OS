@@ -1,10 +1,10 @@
 # HiMe OS — Backend Development Progress Report
 
-> **Last Updated**: July 25, 2026  
+> **Last Updated**: July 26, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 148/148 passing (100% across 13 test suites)  
+> **Total Test Pass Rate**: 163/163 passing (100% across 14 test suites)  
 > **Total API Endpoints**: 40 Endpoints  
-> **Total Lines of Code Added**: ~12,000+
+> **Total Lines of Code Added**: ~13,200+
 
 ---
 
@@ -26,11 +26,13 @@
 14. [Phase 11 — Automation Engine Module](#phase-11--automation-engine-module)
 15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
 16. [Phase 13 — Refresh Token Rotation Module](#phase-13--refresh-token-rotation-module)
-17. [Database Schema](#database-schema)
-18. [API Endpoints Summary](#api-endpoints-summary)
-19. [Test Coverage](#test-coverage)
-20. [File Structure](#file-structure)
-21. [What's Next](#whats-next)
+17. [Phase 14 — Authorization & RBAC Layer Module](#phase-14--authorization--rbac-layer-module)
+18. [Database Schema](#database-schema)
+19. [API Endpoints Summary](#api-endpoints-summary)
+20. [Test Coverage](#test-coverage)
+21. [File Structure](#file-structure)
+22. [Git Commit History](#git-commit-history)
+23. [What's Next](#whats-next)
 
 ---
 
@@ -52,6 +54,7 @@ The backend is intentionally built module by module, following clean architectur
 | Database       | PostgreSQL (pgvector enabled)          |
 | ORM            | Prisma                                 |
 | Authentication | JWT (Access + Refresh Tokens)          |
+| Authorization  | Centralized RBAC & Permission Matrix   |
 | Validation     | Zod                                    |
 | Documentation  | Swagger / OpenAPI (`@fastify/swagger`) |
 | Hashing        | bcrypt & SHA-256                      |
@@ -68,10 +71,11 @@ The backend follows a strict **4-tier layered architecture** with clear separati
 
 ```
 Routes
-  → Controllers      (HTTP request/response handling, Zod parsing)
-    → Services        (Business logic, ownership validation, state transitions)
-      → Repositories  (Data access layer, Prisma queries)
-        → Prisma      (ORM → PostgreSQL)
+  → Middleware        (authenticate, authorize)
+    → Controllers      (HTTP request/response handling, Zod parsing)
+      → Services        (Business logic, ownership validation, authorization rules)
+        → Repositories  (Data access layer, Prisma queries)
+          → Prisma      (ORM → PostgreSQL)
 ```
 
 ### Core Principles
@@ -79,7 +83,7 @@ Routes
 - **Controllers never access Prisma directly.**
 - **Services enforce all business rules** (ownership checks, timestamp transitions, validation).
 - **Repositories are the only layer that touches the database.**
-- **Routes only handle endpoint registration**, Swagger schema attachment, and middleware wiring.
+- **Routes handle endpoint registration**, Swagger schema attachment, and preHandler middleware wiring (`authenticate`, `authorize`).
 - **SOLID principles** are followed throughout.
 - **No `any` types** — strict TypeScript is enforced by both `tsc` and ESLint.
 
@@ -146,30 +150,34 @@ Routes
 ---
 
 ## Phase 13 — Refresh Token Rotation Module
+**Status**: ✅ Complete | **Commit**: `e6cf213`
+
+---
+
+## Phase 14 — Authorization & RBAC Layer Module
 
 **Status**: ✅ Complete  
-**Commit**: `e6cf213` — *Implement Refresh Token Rotation with family-based reuse detection, SHA-256 hashing, and session revocation*
+**Commit**: Pending — *Implement Authorization & RBAC Layer with centralized permissions, role services, and route authorization middleware*
 
 ### What Was Built
 
-| Component                    | File(s)                                                  |
-| :--------------------------- | :------------------------------------------------------- |
-| Database Schema              | `prisma/schema.prisma` (`RefreshToken` model)            |
-| Hashing Utility              | `src/utils/hash.ts` (`hashToken` SHA-256)               |
-| Refresh Token Repository     | `src/repositories/refresh-token.repository.ts`          |
-| Refresh Token Service        | `src/services/refresh-token.service.ts`                  |
-| Auth Service & Controller    | `src/services/auth.service.ts`, `src/controllers/auth.controller.ts` |
-| Zod & Swagger Schemas        | `src/schemas/auth.schema.ts` (`refreshSchema`, `logoutSchema`) |
-| Routes                       | `src/routes/auth.route.ts` (`POST /auth/refresh`, `POST /auth/logout`) |
-| Vitest Integration Test Suite| `tests/refresh-token.test.ts` (12 tests)                  |
+| Component                  | File(s)                                                       |
+| :------------------------- | :------------------------------------------------------------ |
+| Centralized Permission Types | `src/types/permissions.ts`                                    |
+| Permission & Role Matrix   | `src/config/permissions.ts`                                  |
+| Role Service               | `src/services/authorization/role.service.ts`                 |
+| Permission Service         | `src/services/authorization/permission.service.ts`           |
+| Authorization Service      | `src/services/authorization/authorization.service.ts`        |
+| Route Authorization        | `src/middleware/authorize.ts` (`authorize`, `authorizeRole`) |
+| Route Integration          | `src/routes/project.route.ts`, `task.route.ts`, `automation.route.ts` |
+| Vitest Test Suite          | `tests/authorization.test.ts` (15 tests)                      |
 
 ### Features & Security Rules
 
-- **Database-backed Refresh Tokens**: Stored safely in PostgreSQL using SHA-256 hashes (never raw tokens).
-- **Token Family Tracking (`familyId`)**: Group tokens in a rotation chain to track lineage.
-- **Automatic Reuse Detection**: If an old (already rotated) token is reused, the entire token family is immediately revoked to protect against token theft.
-- **Idempotent Revocation & Logout**: `POST /auth/logout` invalidates the active refresh token session safely.
-- **Provider Secret Isolation**: Refresh tokens use `JWT_REFRESH_SECRET` distinct from short-lived access tokens.
+- **Decoupled & Centralized**: Permissions (`project:create`, `task:update`, `automation:run`, `user:manage`, etc.) are centralized in `src/config/permissions.ts` with no string literals scattered across codebase.
+- **Extensible Roles**: Supports `USER`, `ADMIN`, `OWNER`, `EDITOR`, `VIEWER`, `SERVICE_ACCOUNT` with clean hierarchy rank evaluation.
+- **Route Authorization Middleware**: `authorize("permission:name")` preHandler enforces HTTP 401 Unauthorized for unauthenticated requests and HTTP 403 Forbidden for insufficient permissions.
+- **Resource Ownership Validation**: `AuthorizationService` validates resource ownership while granting ADMIN and OWNER roles automatic bypass capabilities.
 
 ---
 
@@ -293,8 +301,8 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 ## Test Coverage
 
 ```
-Test Files  13 passed (13)
-     Tests  148 passed (148)
+Test Files  14 passed (14)
+     Tests  163 passed (163)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -309,6 +317,7 @@ Test Files  13 passed (13)
   ✓ tests/automation.test.ts       (13 tests)
   ✓ tests/tools.test.ts            (17 tests)
   ✓ tests/refresh-token.test.ts    (12 tests)
+  ✓ tests/authorization.test.ts    (15 tests)
 ```
 
 ---
@@ -327,9 +336,10 @@ backend/
 │   │   ├── database.ts                # Prisma client singleton
 │   │   ├── env.ts                     # Environment variables (Zod validated)
 │   │   ├── ai.ts                      # AI layer, Vector & RAG configuration defaults
-│   │   └── logger.ts                  # Pino logger config
+│   │   ├── logger.ts                  # Pino logger config
+│   │   └── permissions.ts             # Centralized Role-Permission mapping & hierarchy scores
 │   ├── controllers/
-│   │   ├── auth.controller.ts         # Auth HTTP handlers (register, login, refresh, logout, me)
+│   │   ├── auth.controller.ts         # Auth HTTP handlers
 │   │   ├── project.controller.ts      # Project HTTP handlers
 │   │   ├── task.controller.ts         # Task HTTP handlers
 │   │   ├── conversation.controller.ts # Conversation & Message HTTP handlers
@@ -339,6 +349,7 @@ backend/
 │   │   └── automation.controller.ts   # Automation HTTP handlers
 │   ├── middleware/
 │   │   ├── auth.ts                    # JWT authenticate middleware
+│   │   ├── authorize.ts               # Route authorization middleware (authorize, authorizeRole)
 │   │   ├── errorHandler.ts            # Global error handler
 │   │   └── notFound.ts                # 404 handler
 │   ├── plugins/
@@ -358,7 +369,7 @@ backend/
 │   ├── routes/
 │   │   ├── index.ts                   # Route aggregator
 │   │   ├── health.route.ts            # GET /health
-│   │   ├── auth.route.ts              # /auth/* routes (register, login, refresh, logout, me)
+│   │   ├── auth.route.ts              # /auth/* routes
 │   │   ├── project.route.ts           # /projects/* routes
 │   │   ├── task.route.ts              # /tasks/* and /projects/:id/tasks routes
 │   │   ├── conversation.route.ts      # /conversations/* and /projects/:id/conversations routes
@@ -367,7 +378,7 @@ backend/
 │   │   ├── vector.route.ts            # /memories/search, reindex, similar routes
 │   │   └── automation.route.ts        # /automations/* and /projects/:id/automations routes
 │   ├── schemas/
-│   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas (includes refresh & logout)
+│   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas
 │   │   ├── health.schema.ts           # Health Swagger schema
 │   │   ├── project.schema.ts          # Project Zod + Swagger schemas
 │   │   ├── task.schema.ts             # Task Zod + Swagger schemas
@@ -383,11 +394,17 @@ backend/
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
+│   │   ├── authorization/             # Authorization & RBAC Layer
+│   │   │   ├── role.service.ts        # Role rank & hierarchy comparison
+│   │   │   ├── permission.service.ts  # Role permission resolution
+│   │   │   ├── authorization.service.ts# Assertions & ownership check facade
+│   │   │   └── index.ts               # Authorization barrel export
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
 │   │   │   └── tools/                 # Tool Calling Framework
 │   │   └── automation/                # Automation Engine Module
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
+│   │   ├── permissions.ts             # Permission, SystemRole & AuthUserContext types
 │   │   ├── ai.ts                      # AI, Context Builder & RAG interface types
 │   │   └── vector.ts                  # Vector search interface types
 │   └── utils/
@@ -406,7 +423,8 @@ backend/
 │   ├── rag.test.ts                    # RAG Memory Pipeline tests (3)
 │   ├── automation.test.ts             # Automation Engine tests (13)
 │   ├── tools.test.ts                  # Tool Calling Framework tests (17)
-│   └── refresh-token.test.ts          # Refresh Token Rotation tests (12)
+│   ├── refresh-token.test.ts          # Refresh Token Rotation tests (12)
+│   └── authorization.test.ts          # Authorization & RBAC tests (15)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -422,10 +440,10 @@ backend/
 
 The following modules are planned for future implementation:
 
-| Module            | Purpose                                                          | Status / Issue |
-| :---------------- | :--------------------------------------------------------------- | :------------- |
-| RBAC Middleware   | Role-based access control using `UserRole` enum (`USER` \| `ADMIN`) | Issue [#6](https://github.com/Ayu5h576/HiMe-OS/issues/6) |
-| IoT Device Module | Smart device registration, status monitoring, and control        | Planned        |
+| Module                      | Purpose                                                        | Priority |
+| :-------------------------- | :------------------------------------------------------------- | :------- |
+| Project Collaboration / Sharing | Multi-user workspace access with ProjectRole assignments (`OWNER`, `EDITOR`, `VIEWER`) | High |
+| IoT Device Module           | Smart device registration, status monitoring, and control      | Medium   |
 
 ---
 

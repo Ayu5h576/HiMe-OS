@@ -1,0 +1,73 @@
+import { SystemRole, Permission } from '../types/permissions';
+
+const ALL_STANDARD_PERMISSIONS: Permission[] = [
+  'project:create',
+  'project:read',
+  'project:update',
+  'project:delete',
+  'task:create',
+  'task:read',
+  'task:update',
+  'task:delete',
+  'conversation:create',
+  'conversation:read',
+  'conversation:update',
+  'conversation:delete',
+  'memory:create',
+  'memory:read',
+  'memory:update',
+  'memory:delete',
+  'automation:create',
+  'automation:read',
+  'automation:update',
+  'automation:delete',
+  'automation:run',
+  'user:read',
+];
+
+export const ROLE_PERMISSIONS: Record<SystemRole, Permission[]> = {
+  VIEWER: [
+    'project:read',
+    'task:read',
+    'conversation:read',
+    'memory:read',
+    'automation:read',
+    'user:read',
+  ],
+  EDITOR: [
+    'project:read',
+    'task:create',
+    'task:read',
+    'task:update',
+    'conversation:create',
+    'conversation:read',
+    'conversation:update',
+    'memory:create',
+    'memory:read',
+    'memory:update',
+    'automation:read',
+    'automation:run',
+    'user:read',
+  ],
+  USER: ALL_STANDARD_PERMISSIONS,
+  SERVICE_ACCOUNT: [
+    'project:read',
+    'task:read',
+    'task:update',
+    'memory:create',
+    'memory:read',
+    'automation:read',
+    'automation:run',
+  ],
+  ADMIN: [...ALL_STANDARD_PERMISSIONS, 'user:manage', 'admin:access'],
+  OWNER: [...ALL_STANDARD_PERMISSIONS, 'user:manage', 'admin:access'],
+};
+
+export const ROLE_HIERARCHY: Record<SystemRole, number> = {
+  VIEWER: 10,
+  EDITOR: 20,
+  USER: 30,
+  SERVICE_ACCOUNT: 35,
+  ADMIN: 40,
+  OWNER: 50,
+};
