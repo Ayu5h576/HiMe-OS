@@ -73,6 +73,30 @@ enum ExecutionStatus {
   FAILED
 }
 
+enum DeviceType {
+  LIGHT
+  FAN
+  THERMOSTAT
+  LOCK
+  CAMERA
+  SENSOR
+  SWITCH
+  CUSTOM
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+  UPDATING
+  UNKNOWN
+}
+
+enum ConnectionState {
+  CONNECTED
+  DISCONNECTED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -104,6 +128,7 @@ model Project {
   conversations Conversation[]
   memories      Memory[]
   automations   Automation[]
+  devices       Device[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -259,4 +284,31 @@ model RefreshToken {
   @@index([familyId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model Device {
+  id              String          @id @default(cuid())
+  name            String          @db.VarChar(100)
+  type            DeviceType      @default(CUSTOM)
+  manufacturer    String?         @db.VarChar(100)
+  model           String?         @db.VarChar(100)
+  firmwareVersion String?         @db.VarChar(50)
+  status          DeviceStatus    @default(UNKNOWN)
+  connectionState ConnectionState @default(DISCONNECTED)
+  batteryLevel    Int?
+  lastSeen        DateTime?
+  capabilities    Json?
+  metadata        Json?
+
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+  @@index([connectionState])
+  @@map("devices")
 }

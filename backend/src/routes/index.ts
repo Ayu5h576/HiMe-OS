@@ -8,6 +8,7 @@ import { memoryRoutes } from './memory.route';
 import { aiRoutes } from './ai.route';
 import { vectorRoutes } from './vector.route';
 import { automationRoutes } from './automation.route';
+import { deviceRoutes } from './device.route';
 
 export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
@@ -19,4 +20,5 @@ export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(aiRoutes);
   await fastify.register(vectorRoutes);
   await fastify.register(automationRoutes);
+  await fastify.register(deviceRoutes);
 };

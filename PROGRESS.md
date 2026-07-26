@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 26, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 148/148 passing (100% across 13 test suites)  
-> **Total API Endpoints**: 40 Endpoints  
-> **Total Lines of Code Added**: ~12,000+
+> **Total Test Pass Rate**: 161/161 passing (100% across 14 test suites)  
+> **Total API Endpoints**: 47 Endpoints  
+> **Total Lines of Code Added**: ~13,500+
 
 ---
 
@@ -26,11 +26,11 @@
 14. [Phase 11 — Automation Engine Module](#phase-11--automation-engine-module)
 15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
 16. [Phase 13 — Refresh Token Rotation Module](#phase-13--refresh-token-rotation-module)
-17. [Database Schema](#database-schema)
-18. [API Endpoints Summary](#api-endpoints-summary)
-19. [Test Coverage](#test-coverage)
-20. [File Structure](#file-structure)
-21. [Git Commit History](#git-commit-history)
+17. [Phase 14 — Device Framework Module](#phase-14--device-framework-module)
+18. [Database Schema](#database-schema)
+19. [API Endpoints Summary](#api-endpoints-summary)
+20. [Test Coverage](#test-coverage)
+21. [File Structure](#file-structure)
 22. [What's Next](#whats-next)
 
 ---
@@ -153,6 +153,33 @@ Routes
 
 ---
 
+## Phase 14 — Device Framework Module
+
+**Status**: ✅ Complete  
+**Commit**: Pending — *Implement Device Framework supporting device registry, types, status simulation, and capabilities*
+
+### What Was Built
+
+| Component                  | File(s)                                                       |
+| :------------------------- | :------------------------------------------------------------ |
+| Database Schema            | `prisma/schema.prisma` (`Device` model + Enums)               |
+| Zod & Swagger Schemas      | `src/schemas/device.schema.ts`                                |
+| Device Repository          | `src/repositories/device.repository.ts`                      |
+| Registry Service           | `src/services/device-registry.service.ts`                    |
+| Device Service             | `src/services/device.service.ts`                             |
+| Device Controller          | `src/controllers/device.controller.ts`                       |
+| Device Routes              | `src/routes/device.route.ts`                                  |
+| Vitest Test Suite          | `tests/device.test.ts` (13 tests)                             |
+
+### Features & Business Rules
+
+- **Virtual Device Registry**: Register hardware-agnostic virtual devices with standard types (`LIGHT`, `FAN`, `THERMOSTAT`, `LOCK`, `CAMERA`, `SENSOR`, `SWITCH`, `CUSTOM`).
+- **Capability Resolution**: `DeviceRegistryService` maps default capabilities by device type (e.g. `LIGHT` → `['turnOn', 'turnOff', 'brightness']`, `THERMOSTAT` → `['temperature', 'setPoint']`).
+- **Connection Simulation**: `POST /devices/:id/connect` (`ONLINE`/`CONNECTED`) and `POST /devices/:id/disconnect` (`OFFLINE`/`DISCONNECTED`).
+- **Project Ownership Validation**: Enforces strict user ownership across all device management operations.
+
+---
+
 ## Database Schema
 
 ```prisma
@@ -165,6 +192,9 @@ enum TriggerType     { MANUAL | SCHEDULED | TASK_OVERDUE | MEMORY_MATCH | CONVER
 enum ConditionType   { ALWAYS | EQUALS | CONTAINS | GREATER_THAN }
 enum ActionType      { CREATE_TASK | UPDATE_TASK_STATUS | CREATE_MEMORY | SEND_INTERNAL_NOTIFICATION | LOG_EVENT }
 enum ExecutionStatus { PENDING | RUNNING | SUCCESS | FAILED }
+enum DeviceType      { LIGHT | FAN | THERMOSTAT | LOCK | CAMERA | SENSOR | SWITCH | CUSTOM }
+enum DeviceStatus    { ONLINE | OFFLINE | ERROR | UPDATING | UNKNOWN }
+enum ConnectionState { CONNECTED | DISCONNECTED }
 
 User ─┬─ id, email, password, name, role, isActive, createdAt, updatedAt
       ├─► has many Projects
@@ -178,7 +208,11 @@ Project ─┬─ id, name, description, color, icon, isArchived, ownerId, creat
          ├─► has many Tasks
          ├─► has many Conversations
          ├─► has many Memories
-         └─► has many Automations
+         ├─► has many Automations
+         └─► has many Devices
+
+Device ─┬─ id, name, type, manufacturer, model, firmwareVersion, status, connectionState, batteryLevel, lastSeen, capabilities, metadata, projectId, createdAt, updatedAt
+       └─► belongs to Project (projectId → Project.id, onDelete: Cascade)
 
 Task ─┬─ id, title, description, status, priority, dueDate, completedAt, projectId, createdAt, updatedAt
       └─► belongs to Project (projectId → Project.id, onDelete: Cascade)
@@ -266,15 +300,24 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 * `POST /automations/:id/run`
 * `GET /automations/:id/executions`
 
-**Total Endpoints**: 40
+### 10. Device Framework (7 Endpoints)
+* `POST /projects/:projectId/devices`
+* `GET /projects/:projectId/devices`
+* `GET /devices/:id`
+* `PATCH /devices/:id`
+* `DELETE /devices/:id`
+* `POST /devices/:id/connect`
+* `POST /devices/:id/disconnect`
+
+**Total Endpoints**: 47
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  13 passed (13)
-     Tests  148 passed (148)
+Test Files  14 passed (14)
+     Tests  161 passed (161)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -289,6 +332,7 @@ Test Files  13 passed (13)
   ✓ tests/automation.test.ts       (13 tests)
   ✓ tests/tools.test.ts            (17 tests)
   ✓ tests/refresh-token.test.ts    (12 tests)
+  ✓ tests/device.test.ts           (13 tests)
 ```
 
 ---
@@ -298,7 +342,7 @@ Test Files  13 passed (13)
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma                  # Database schema with RefreshToken, Automation & Execution models
+│   ├── schema.prisma                  # Database schema with Device, RefreshToken, Automation & Execution models
 │   └── migrations/                    # PostgreSQL migration files
 ├── src/
 │   ├── app.ts                         # Fastify app builder
@@ -316,7 +360,8 @@ backend/
 │   │   ├── memory.controller.ts       # Memory HTTP handlers
 │   │   ├── ai.controller.ts           # AI chat HTTP handlers
 │   │   ├── vector.controller.ts       # Vector search HTTP handlers
-│   │   └── automation.controller.ts   # Automation HTTP handlers
+│   │   ├── automation.controller.ts   # Automation HTTP handlers
+│   │   └── device.controller.ts       # Device HTTP handlers
 │   ├── middleware/
 │   │   ├── auth.ts                    # JWT authenticate middleware
 │   │   ├── errorHandler.ts            # Global error handler
@@ -334,7 +379,8 @@ backend/
 │   │   ├── message.repository.ts      # Message data access layer
 │   │   ├── memory.repository.ts       # Memory data access layer
 │   │   ├── automation.repository.ts   # Automation data access layer
-│   │   └── automation-execution.repository.ts # Execution log data access layer
+│   │   ├── automation-execution.repository.ts # Execution log data access layer
+│   │   └── device.repository.ts       # Device data access layer
 │   ├── routes/
 │   │   ├── index.ts                   # Route aggregator
 │   │   ├── health.route.ts            # GET /health
@@ -345,7 +391,8 @@ backend/
 │   │   ├── memory.route.ts            # /memories/* and /projects/:id/memories routes
 │   │   ├── ai.route.ts                # /ai/* routes
 │   │   ├── vector.route.ts            # /memories/search, reindex, similar routes
-│   │   └── automation.route.ts        # /automations/* and /projects/:id/automations routes
+│   │   ├── automation.route.ts        # /automations/* and /projects/:id/automations routes
+│   │   └── device.route.ts            # /devices/* and /projects/:id/devices routes
 │   ├── schemas/
 │   │   ├── auth.schema.ts             # Auth Zod + Swagger schemas
 │   │   ├── health.schema.ts           # Health Swagger schema
@@ -355,7 +402,8 @@ backend/
 │   │   ├── memory.schema.ts           # Memory Zod + Swagger schemas
 │   │   ├── ai.schema.ts               # AI Zod + Swagger schemas
 │   │   ├── vector.schema.ts           # Vector Zod + Swagger schemas
-│   │   └── automation.schema.ts       # Automation Zod + Swagger schemas
+│   │   ├── automation.schema.ts       # Automation Zod + Swagger schemas
+│   │   └── device.schema.ts           # Device Zod + Swagger schemas
 │   ├── services/
 │   │   ├── auth.service.ts            # Auth business logic
 │   │   ├── refresh-token.service.ts   # Refresh token lifecycle & reuse detection logic
@@ -363,6 +411,8 @@ backend/
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
+│   │   ├── device-registry.service.ts # Device capability resolution logic
+│   │   ├── device.service.ts          # Device business & connection state logic
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
 │   │   │   └── tools/                 # Tool Calling Framework
 │   │   └── automation/                # Automation Engine Module
@@ -386,7 +436,8 @@ backend/
 │   ├── rag.test.ts                    # RAG Memory Pipeline tests (3)
 │   ├── automation.test.ts             # Automation Engine tests (13)
 │   ├── tools.test.ts                  # Tool Calling Framework tests (17)
-│   └── refresh-token.test.ts          # Refresh Token Rotation tests (12)
+│   ├── refresh-token.test.ts          # Refresh Token Rotation tests (12)
+│   └── device.test.ts                 # Device Framework tests (13)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -402,9 +453,10 @@ backend/
 
 The following modules are planned for future implementation:
 
-| Module            | Purpose                                                       | Priority |
-| :---------------- | :------------------------------------------------------------ | :------- |
-| IoT Device Module | Smart device registration, status monitoring, and control     | Medium   |
+| Module                     | Purpose                                                          | Priority |
+| :------------------------- | :--------------------------------------------------------------- | :------- |
+| Device Tool Integration    | Tool Calling Framework integration for AI device control         | Medium   |
+| Device Automation Triggers | Automation Engine triggers & actions for device state events     | Medium   |
 
 ---
 
