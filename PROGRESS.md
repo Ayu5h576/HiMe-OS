@@ -157,7 +157,7 @@ Routes
 ## Phase 14 — Authorization & RBAC Layer Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Authorization & RBAC Layer with centralized permissions, role services, and route authorization middleware*
+**Commit**: `dc12b78` — *Implement Authorization & RBAC Layer with centralized permissions, role services, and route authorization middleware*
 
 ### What Was Built
 
