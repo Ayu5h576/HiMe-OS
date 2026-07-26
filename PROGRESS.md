@@ -156,7 +156,7 @@ Routes
 ## Phase 14 — Device Framework Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Device Framework supporting device registry, types, status simulation, and capabilities*
+**Commit**: `9919294` — *Implement Device Framework supporting device registry, types, status simulation, and capabilities*
 
 ### What Was Built
 
