@@ -3,7 +3,6 @@ import { UserRole } from '@prisma/client';
 
 export * from './ai';
 export * from './vector';
-export * from './permissions';
 
 export interface UserPayload {
   id: string;

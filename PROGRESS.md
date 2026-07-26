@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 26, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 163/163 passing (100% across 14 test suites)  
+> **Total Test Pass Rate**: 148/148 passing (100% across 13 test suites)  
 > **Total API Endpoints**: 40 Endpoints  
-> **Total Lines of Code Added**: ~13,200+
+> **Total Lines of Code Added**: ~12,000+
 
 ---
 
@@ -26,19 +26,18 @@
 14. [Phase 11 — Automation Engine Module](#phase-11--automation-engine-module)
 15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
 16. [Phase 13 — Refresh Token Rotation Module](#phase-13--refresh-token-rotation-module)
-17. [Phase 14 — Authorization & RBAC Layer Module](#phase-14--authorization--rbac-layer-module)
-18. [Database Schema](#database-schema)
-19. [API Endpoints Summary](#api-endpoints-summary)
-20. [Test Coverage](#test-coverage)
-21. [File Structure](#file-structure)
-22. [Git Commit History](#git-commit-history)
-23. [What's Next](#whats-next)
+17. [Database Schema](#database-schema)
+18. [API Endpoints Summary](#api-endpoints-summary)
+19. [Test Coverage](#test-coverage)
+20. [File Structure](#file-structure)
+21. [Git Commit History](#git-commit-history)
+22. [What's Next](#whats-next)
 
 ---
 
 ## Project Overview
 
-**HiMe OS** is a production-grade AI Operating System designed for long-term scalability, maintainability, and security. The backend serves as the foundational infrastructure layer that future AI agents, memory engines, conversation pipelines, IoT integrations, and automation logic will be built upon.
+**HiMe OS** is a production-grade personal AI Operating System designed for long-term scalability, maintainability, and security. The backend serves as the foundational infrastructure layer that future AI agents, memory engines, conversation pipelines, IoT integrations, and automation logic will be built upon.
 
 The backend is intentionally built module by module, following clean architecture principles, so that each new feature plugs into a well-defined structure without breaking existing functionality.
 
@@ -53,8 +52,8 @@ The backend is intentionally built module by module, following clean architectur
 | Framework      | Fastify                                |
 | Database       | PostgreSQL (pgvector enabled)          |
 | ORM            | Prisma                                 |
-| Authentication | JWT (Access + Refresh Tokens)          |
-| Authorization  | Centralized RBAC & Permission Matrix   |
+| Authentication | JWT (Access + Refresh Token Rotation)  |
+| Authorization  | Resource Ownership Validation          |
 | Validation     | Zod                                    |
 | Documentation  | Swagger / OpenAPI (`@fastify/swagger`) |
 | Hashing        | bcrypt & SHA-256                      |
@@ -71,9 +70,9 @@ The backend follows a strict **4-tier layered architecture** with clear separati
 
 ```
 Routes
-  → Middleware        (authenticate, authorize)
+  → Authentication Middleware (authenticate)
     → Controllers      (HTTP request/response handling, Zod parsing)
-      → Services        (Business logic, ownership validation, authorization rules)
+      → Services        (Business logic, ownership validation, state transitions)
         → Repositories  (Data access layer, Prisma queries)
           → Prisma      (ORM → PostgreSQL)
 ```
@@ -83,7 +82,7 @@ Routes
 - **Controllers never access Prisma directly.**
 - **Services enforce all business rules** (ownership checks, timestamp transitions, validation).
 - **Repositories are the only layer that touches the database.**
-- **Routes handle endpoint registration**, Swagger schema attachment, and preHandler middleware wiring (`authenticate`, `authorize`).
+- **Routes handle endpoint registration**, Swagger schema attachment, and preHandler middleware wiring (`authenticate`).
 - **SOLID principles** are followed throughout.
 - **No `any` types** — strict TypeScript is enforced by both `tsc` and ESLint.
 
@@ -151,33 +150,6 @@ Routes
 
 ## Phase 13 — Refresh Token Rotation Module
 **Status**: ✅ Complete | **Commit**: `e6cf213`
-
----
-
-## Phase 14 — Authorization & RBAC Layer Module
-
-**Status**: ✅ Complete  
-**Commit**: `dc12b78` — *Implement Authorization & RBAC Layer with centralized permissions, role services, and route authorization middleware*
-
-### What Was Built
-
-| Component                  | File(s)                                                       |
-| :------------------------- | :------------------------------------------------------------ |
-| Centralized Permission Types | `src/types/permissions.ts`                                    |
-| Permission & Role Matrix   | `src/config/permissions.ts`                                  |
-| Role Service               | `src/services/authorization/role.service.ts`                 |
-| Permission Service         | `src/services/authorization/permission.service.ts`           |
-| Authorization Service      | `src/services/authorization/authorization.service.ts`        |
-| Route Authorization        | `src/middleware/authorize.ts` (`authorize`, `authorizeRole`) |
-| Route Integration          | `src/routes/project.route.ts`, `task.route.ts`, `automation.route.ts` |
-| Vitest Test Suite          | `tests/authorization.test.ts` (15 tests)                      |
-
-### Features & Security Rules
-
-- **Decoupled & Centralized**: Permissions (`project:create`, `task:update`, `automation:run`, `user:manage`, etc.) are centralized in `src/config/permissions.ts` with no string literals scattered across codebase.
-- **Extensible Roles**: Supports `USER`, `ADMIN`, `OWNER`, `EDITOR`, `VIEWER`, `SERVICE_ACCOUNT` with clean hierarchy rank evaluation.
-- **Route Authorization Middleware**: `authorize("permission:name")` preHandler enforces HTTP 401 Unauthorized for unauthenticated requests and HTTP 403 Forbidden for insufficient permissions.
-- **Resource Ownership Validation**: `AuthorizationService` validates resource ownership while granting ADMIN and OWNER roles automatic bypass capabilities.
 
 ---
 
@@ -301,8 +273,8 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 ## Test Coverage
 
 ```
-Test Files  14 passed (14)
-     Tests  163 passed (163)
+Test Files  13 passed (13)
+     Tests  148 passed (148)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -317,7 +289,6 @@ Test Files  14 passed (14)
   ✓ tests/automation.test.ts       (13 tests)
   ✓ tests/tools.test.ts            (17 tests)
   ✓ tests/refresh-token.test.ts    (12 tests)
-  ✓ tests/authorization.test.ts    (15 tests)
 ```
 
 ---
@@ -336,8 +307,7 @@ backend/
 │   │   ├── database.ts                # Prisma client singleton
 │   │   ├── env.ts                     # Environment variables (Zod validated)
 │   │   ├── ai.ts                      # AI layer, Vector & RAG configuration defaults
-│   │   ├── logger.ts                  # Pino logger config
-│   │   └── permissions.ts             # Centralized Role-Permission mapping & hierarchy scores
+│   │   └── logger.ts                  # Pino logger config
 │   ├── controllers/
 │   │   ├── auth.controller.ts         # Auth HTTP handlers
 │   │   ├── project.controller.ts      # Project HTTP handlers
@@ -349,7 +319,6 @@ backend/
 │   │   └── automation.controller.ts   # Automation HTTP handlers
 │   ├── middleware/
 │   │   ├── auth.ts                    # JWT authenticate middleware
-│   │   ├── authorize.ts               # Route authorization middleware (authorize, authorizeRole)
 │   │   ├── errorHandler.ts            # Global error handler
 │   │   └── notFound.ts                # 404 handler
 │   ├── plugins/
@@ -394,17 +363,11 @@ backend/
 │   │   ├── task.service.ts            # Task business logic
 │   │   ├── conversation.service.ts    # Conversation & Message business logic
 │   │   ├── memory.service.ts          # Memory business logic
-│   │   ├── authorization/             # Authorization & RBAC Layer
-│   │   │   ├── role.service.ts        # Role rank & hierarchy comparison
-│   │   │   ├── permission.service.ts  # Role permission resolution
-│   │   │   ├── authorization.service.ts# Assertions & ownership check facade
-│   │   │   └── index.ts               # Authorization barrel export
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
 │   │   │   └── tools/                 # Tool Calling Framework
 │   │   └── automation/                # Automation Engine Module
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
-│   │   ├── permissions.ts             # Permission, SystemRole & AuthUserContext types
 │   │   ├── ai.ts                      # AI, Context Builder & RAG interface types
 │   │   └── vector.ts                  # Vector search interface types
 │   └── utils/
@@ -423,8 +386,7 @@ backend/
 │   ├── rag.test.ts                    # RAG Memory Pipeline tests (3)
 │   ├── automation.test.ts             # Automation Engine tests (13)
 │   ├── tools.test.ts                  # Tool Calling Framework tests (17)
-│   ├── refresh-token.test.ts          # Refresh Token Rotation tests (12)
-│   └── authorization.test.ts          # Authorization & RBAC tests (15)
+│   └── refresh-token.test.ts          # Refresh Token Rotation tests (12)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -440,10 +402,9 @@ backend/
 
 The following modules are planned for future implementation:
 
-| Module                      | Purpose                                                        | Priority |
-| :-------------------------- | :------------------------------------------------------------- | :------- |
-| Project Collaboration / Sharing | Multi-user workspace access with ProjectRole assignments (`OWNER`, `EDITOR`, `VIEWER`) | High |
-| IoT Device Module           | Smart device registration, status monitoring, and control      | Medium   |
+| Module            | Purpose                                                       | Priority |
+| :---------------- | :------------------------------------------------------------ | :------- |
+| IoT Device Module | Smart device registration, status monitoring, and control     | Medium   |
 
 ---
 
