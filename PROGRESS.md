@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 27, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 182/182 passing (100% across 16 test suites)  
+> **Total Test Pass Rate**: 196/196 passing (100% across 17 test suites)  
 > **Total API Endpoints**: 48 Endpoints  
-> **Total Lines of Code Added**: ~15,100+
+> **Total Lines of Code Added**: ~16,200+
 
 ---
 
@@ -287,10 +287,29 @@ Test Files  16 passed (16)
   ✓ tests/automation.test.ts        (13 tests)
   ✓ tests/tools.test.ts             (17 tests)
   ✓ tests/refresh-token.test.ts     (12 tests)
-  ✓ tests/device.test.ts            (13 tests)
-  ✓ tests/device-tools.test.ts      (14 tests)
   ✓ tests/device-automation.test.ts (7 tests)
+  ✓ tests/cron.test.ts              (14 tests)
 ```
+
+---
+
+## Phase 17 — Scheduled Cron Engine Module
+
+**Status**: ✅ Complete  
+**Commit**: Pending Push — *Implement Scheduled Cron Engine with schedule evaluator, execution locks, cron engine runner, and scheduler service*
+
+### What Was Built
+
+| Component                  | File(s)                                                        |
+| :------------------------- | :------------------------------------------------------------- |
+| Schedule Evaluator Service | `src/services/automation/schedule-evaluator.service.ts`        |
+| Execution Lock Service     | `src/services/automation/execution-lock.service.ts`           |
+| Cron Engine Service        | `src/services/automation/cron-engine.service.ts`              |
+| Scheduler Service          | `src/services/automation/scheduler.service.ts`               |
+| Repository Extension       | `src/repositories/automation.repository.ts` (`findScheduledAutomations`) |
+| Execution Timestamp        | `src/repositories/automation-execution.repository.ts`          |
+| Configuration Schema       | `src/config/env.ts` (`SCHEDULER_ENABLED`, `SCHEDULER_INTERVAL_MS`, `MISSED_EXECUTION_POLICY`) |
+| Vitest Test Suite          | `tests/cron.test.ts` (14 tests)                                |
 
 ---
 
@@ -298,9 +317,9 @@ Test Files  16 passed (16)
 
 The following modules are planned for future implementation:
 
-| Module                     | Purpose                                                          | Priority |
-| :------------------------- | :--------------------------------------------------------------- | :------- |
-| Scheduled Cron Engine      | Background cron runner evaluating scheduled automations periodically | Medium   |
+| Module                      | Purpose                                                          | Priority |
+| :-------------------------- | :--------------------------------------------------------------- | :------- |
+| Notification Gateway Module | Multi-channel user notifications (Email, Web Push, In-App)        | High     |
 
 ---
 

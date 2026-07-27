@@ -39,6 +39,14 @@ const envSchema = z.object({
     .default('true'),
   MAX_RAG_MEMORIES: z.string().transform(Number).default('10'),
   MIN_MEMORY_IMPORTANCE: z.string().transform(Number).default('3'),
+
+  // Scheduler Configuration
+  SCHEDULER_ENABLED: z
+    .string()
+    .transform((val) => val === 'true' || val === '1')
+    .default('true'),
+  SCHEDULER_INTERVAL_MS: z.string().transform(Number).default('60000'),
+  MISSED_EXECUTION_POLICY: z.enum(['skip', 'catchup']).default('skip'),
 });
 
 const parseEnv = () => {

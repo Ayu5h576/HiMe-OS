@@ -14,11 +14,17 @@ export class AutomationExecutionRepository {
     automationId: string,
     input?: Record<string, unknown>,
   ): Promise<AutomationExecution> {
+    const executedAt =
+      input && typeof input.tickTime === 'string'
+        ? new Date(input.tickTime)
+        : new Date();
+
     try {
       return await this.db.automationExecution.create({
         data: {
           automationId,
           status: ExecutionStatus.RUNNING,
+          executedAt,
           input: input as Prisma.InputJsonValue | undefined,
         },
       });
@@ -28,7 +34,7 @@ export class AutomationExecutionRepository {
           id: `exec-cuid-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           automationId,
           status: ExecutionStatus.RUNNING,
-          executedAt: new Date(),
+          executedAt,
           input: (input as Prisma.JsonValue) ?? null,
           output: null,
           error: null,

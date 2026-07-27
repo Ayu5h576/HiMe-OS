@@ -178,4 +178,22 @@ export class AutomationRepository {
       throw err;
     }
   }
+
+  async findScheduledAutomations(): Promise<Automation[]> {
+    try {
+      return await this.db.automation.findMany({
+        where: {
+          enabled: true,
+          triggerType: TriggerType.SCHEDULED,
+        },
+      });
+    } catch (err) {
+      if (env.NODE_ENV === 'test') {
+        return Array.from(this.automationStore.values()).filter(
+          (a) => a.enabled && a.triggerType === TriggerType.SCHEDULED,
+        );
+      }
+      throw err;
+    }
+  }
 }
