@@ -101,6 +101,31 @@ export class ActionRunnerService {
         };
       }
 
+      case ActionType.RUN_AUTOMATION: {
+        const targetAutomationId =
+          typeof actionPayload.targetAutomationId === 'string'
+            ? actionPayload.targetAutomationId
+            : undefined;
+        return {
+          action: 'RUN_AUTOMATION',
+          targetAutomationId: targetAutomationId ?? null,
+          triggered: true,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      case ActionType.UPDATE_DEVICE_STATE: {
+        const deviceId =
+          typeof actionPayload.deviceId === 'string' ? actionPayload.deviceId : undefined;
+        return {
+          action: 'UPDATE_DEVICE_STATE',
+          deviceId: deviceId ?? null,
+          updated: true,
+          state: actionPayload.metadata ?? actionPayload.state ?? {},
+          timestamp: new Date().toISOString(),
+        };
+      }
+
       default:
         throw new BadRequestError(`Unsupported action type: ${automation.actionType}`);
     }

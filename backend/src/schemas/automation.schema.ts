@@ -37,10 +37,22 @@ export const runAutomationSchema = z.object({
   input: z.record(z.unknown()).optional(),
 });
 
+export const deviceEventSchema = z.object({
+  deviceId: z.string().min(1, 'deviceId is required'),
+  eventType: z.nativeEnum(TriggerType),
+  deviceType: z.string().optional(),
+  deviceName: z.string().optional(),
+  previousState: z.record(z.unknown()).optional(),
+  currentState: z.record(z.unknown()).optional(),
+  batteryLevel: z.number().int().min(0).max(100).optional(),
+  error: z.string().optional(),
+});
+
 export type CreateAutomationInput = z.infer<typeof createAutomationSchema>;
 export type UpdateAutomationInput = z.infer<typeof updateAutomationSchema>;
 export type GetAutomationsQueryInput = z.infer<typeof getAutomationsQuerySchema>;
 export type RunAutomationInput = z.infer<typeof runAutomationSchema>;
+export type DeviceEventInput = z.infer<typeof deviceEventSchema>;
 
 // OpenAPI Swagger Schemas
 export const automationSwaggerResponse = {

@@ -1,7 +1,8 @@
-import { Device, DeviceStatus, ConnectionState } from '@prisma/client';
+import { Device, DeviceStatus, ConnectionState, TriggerType } from '@prisma/client';
 import { DeviceRepository } from '../repositories/device.repository';
 import { ProjectRepository } from '../repositories/project.repository';
 import { DeviceRegistryService } from './device-registry.service';
+import { DeviceEventService } from './automation/device-event.service';
 import {
   CreateDeviceInput,
   UpdateDeviceInput,
@@ -14,15 +15,18 @@ export class DeviceService {
   private deviceRepo: DeviceRepository;
   private projectRepo: ProjectRepository;
   private registryService: DeviceRegistryService;
+  private eventService: DeviceEventService;
 
   constructor(
     deviceRepo: DeviceRepository = new DeviceRepository(),
     projectRepo: ProjectRepository = new ProjectRepository(),
     registryService: DeviceRegistryService = new DeviceRegistryService(),
+    eventService: DeviceEventService = new DeviceEventService(),
   ) {
     this.deviceRepo = deviceRepo;
     this.projectRepo = projectRepo;
     this.registryService = registryService;
+    this.eventService = eventService;
   }
 
   private async validateProjectOwnership(userId: string, projectId: string): Promise<void> {
@@ -70,8 +74,36 @@ export class DeviceService {
   }
 
   async updateDevice(userId: string, deviceId: string, input: UpdateDeviceInput): Promise<Device> {
-    await this.getDeviceWithOwnershipCheck(userId, deviceId);
-    return this.deviceRepo.update(deviceId, input);
+    const existing = await this.getDeviceWithOwnershipCheck(userId, deviceId);
+    const updated = await this.deviceRepo.update(deviceId, input);
+
+    // Dispatch DEVICE_STATE_CHANGED event
+    await this.eventService
+      .dispatchDeviceEvent(userId, updated.projectId, {
+        deviceId: updated.id,
+        eventType: TriggerType.DEVICE_STATE_CHANGED,
+        deviceType: updated.type,
+        deviceName: updated.name,
+        previousState: (existing.metadata as Record<string, unknown>) ?? {},
+        currentState: (updated.metadata as Record<string, unknown>) ?? {},
+        batteryLevel: updated.batteryLevel ?? undefined,
+      })
+      .catch(() => {});
+
+    // Dispatch DEVICE_BATTERY_LOW event if battery <= 20
+    if (updated.batteryLevel !== null && updated.batteryLevel <= 20) {
+      await this.eventService
+        .dispatchDeviceEvent(userId, updated.projectId, {
+          deviceId: updated.id,
+          eventType: TriggerType.DEVICE_BATTERY_LOW,
+          deviceType: updated.type,
+          deviceName: updated.name,
+          batteryLevel: updated.batteryLevel,
+        })
+        .catch(() => {});
+    }
+
+    return updated;
   }
 
   async deleteDevice(userId: string, deviceId: string): Promise<void> {
@@ -81,18 +113,60 @@ export class DeviceService {
 
   async connectDevice(userId: string, deviceId: string): Promise<Device> {
     await this.getDeviceWithOwnershipCheck(userId, deviceId);
-    return this.deviceRepo.update(deviceId, {
+    const updated = await this.deviceRepo.update(deviceId, {
       status: DeviceStatus.ONLINE,
       connectionState: ConnectionState.CONNECTED,
       lastSeen: new Date(),
     });
+
+    // Dispatch DEVICE_CONNECTED & DEVICE_ONLINE events
+    await this.eventService
+      .dispatchDeviceEvent(userId, updated.projectId, {
+        deviceId: updated.id,
+        eventType: TriggerType.DEVICE_CONNECTED,
+        deviceType: updated.type,
+        deviceName: updated.name,
+      })
+      .catch(() => {});
+
+    await this.eventService
+      .dispatchDeviceEvent(userId, updated.projectId, {
+        deviceId: updated.id,
+        eventType: TriggerType.DEVICE_ONLINE,
+        deviceType: updated.type,
+        deviceName: updated.name,
+      })
+      .catch(() => {});
+
+    return updated;
   }
 
   async disconnectDevice(userId: string, deviceId: string): Promise<Device> {
     await this.getDeviceWithOwnershipCheck(userId, deviceId);
-    return this.deviceRepo.update(deviceId, {
+    const updated = await this.deviceRepo.update(deviceId, {
       status: DeviceStatus.OFFLINE,
       connectionState: ConnectionState.DISCONNECTED,
     });
+
+    // Dispatch DEVICE_DISCONNECTED & DEVICE_OFFLINE events
+    await this.eventService
+      .dispatchDeviceEvent(userId, updated.projectId, {
+        deviceId: updated.id,
+        eventType: TriggerType.DEVICE_DISCONNECTED,
+        deviceType: updated.type,
+        deviceName: updated.name,
+      })
+      .catch(() => {});
+
+    await this.eventService
+      .dispatchDeviceEvent(userId, updated.projectId, {
+        deviceId: updated.id,
+        eventType: TriggerType.DEVICE_OFFLINE,
+        deviceType: updated.type,
+        deviceName: updated.name,
+      })
+      .catch(() => {});
+
+    return updated;
   }
 }

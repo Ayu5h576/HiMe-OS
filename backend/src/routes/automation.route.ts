@@ -55,4 +55,10 @@ export const automationRoutes: FastifyPluginAsync = async (fastify) => {
     { schema: getExecutionsSwaggerSchema, preHandler: [authenticate] },
     controller.getExecutions,
   );
+
+  fastify.post(
+    '/projects/:projectId/automations/events/device',
+    { preHandler: [authenticate] },
+    controller.dispatchDeviceEvent,
+  );
 };
