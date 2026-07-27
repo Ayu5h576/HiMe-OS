@@ -4,6 +4,18 @@ import { CreateMemoryTool, SearchMemoryTool } from './memory.tools';
 import { ListProjectsTool, GetProjectTool } from './project.tools';
 import { CreateConversationTool, GetConversationTool } from './conversation.tools';
 import { RunAutomationTool, ListAutomationsTool } from './automation.tools';
+import {
+  ListDevicesTool,
+  GetDeviceTool,
+  ConnectDeviceTool,
+  DisconnectDeviceTool,
+  TurnOnDeviceTool,
+  TurnOffDeviceTool,
+  SetBrightnessTool,
+  SetTemperatureTool,
+  LockDeviceTool,
+  UnlockDeviceTool,
+} from './device.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -15,6 +27,7 @@ export * from './memory.tools';
 export * from './project.tools';
 export * from './conversation.tools';
 export * from './automation.tools';
+export * from './device.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -35,6 +48,17 @@ export function initializeSystemTools(
 
   registry.registerTool(new RunAutomationTool());
   registry.registerTool(new ListAutomationsTool());
+
+  registry.registerTool(new ListDevicesTool());
+  registry.registerTool(new GetDeviceTool());
+  registry.registerTool(new ConnectDeviceTool());
+  registry.registerTool(new DisconnectDeviceTool());
+  registry.registerTool(new TurnOnDeviceTool());
+  registry.registerTool(new TurnOffDeviceTool());
+  registry.registerTool(new SetBrightnessTool());
+  registry.registerTool(new SetTemperatureTool());
+  registry.registerTool(new LockDeviceTool());
+  registry.registerTool(new UnlockDeviceTool());
 
   return registry;
 }

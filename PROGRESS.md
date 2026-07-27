@@ -1,10 +1,10 @@
 # HiMe OS — Backend Development Progress Report
 
-> **Last Updated**: July 26, 2026  
+> **Last Updated**: July 27, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 161/161 passing (100% across 14 test suites)  
+> **Total Test Pass Rate**: 175/175 passing (100% across 15 test suites)  
 > **Total API Endpoints**: 47 Endpoints  
-> **Total Lines of Code Added**: ~13,500+
+> **Total Lines of Code Added**: ~14,200+
 
 ---
 
@@ -27,11 +27,12 @@
 15. [Phase 12 — Tool Calling Framework Module](#phase-12--tool-calling-framework-module)
 16. [Phase 13 — Refresh Token Rotation Module](#phase-13--refresh-token-rotation-module)
 17. [Phase 14 — Device Framework Module](#phase-14--device-framework-module)
-18. [Database Schema](#database-schema)
-19. [API Endpoints Summary](#api-endpoints-summary)
-20. [Test Coverage](#test-coverage)
-21. [File Structure](#file-structure)
-22. [What's Next](#whats-next)
+18. [Phase 15 — Device Tool Integration Module](#phase-15--device-tool-integration-module)
+19. [Database Schema](#database-schema)
+20. [API Endpoints Summary](#api-endpoints-summary)
+21. [Test Coverage](#test-coverage)
+22. [File Structure](#file-structure)
+23. [What's Next](#whats-next)
 
 ---
 
@@ -54,6 +55,7 @@ The backend is intentionally built module by module, following clean architectur
 | ORM            | Prisma                                 |
 | Authentication | JWT (Access + Refresh Token Rotation)  |
 | Authorization  | Resource Ownership Validation          |
+| Tool Calling   | Extensible Tool Calling Framework      |
 | Validation     | Zod                                    |
 | Documentation  | Swagger / OpenAPI (`@fastify/swagger`) |
 | Hashing        | bcrypt & SHA-256                      |
@@ -154,29 +156,29 @@ Routes
 ---
 
 ## Phase 14 — Device Framework Module
+**Status**: ✅ Complete | **Commit**: `9919294`
+
+---
+
+## Phase 15 — Device Tool Integration Module
 
 **Status**: ✅ Complete  
-**Commit**: `9919294` — *Implement Device Framework supporting device registry, types, status simulation, and capabilities*
+**Commit**: Pending — *Implement Device Tool Integration connecting Tool Calling Framework with Device Framework*
 
 ### What Was Built
 
 | Component                  | File(s)                                                       |
 | :------------------------- | :------------------------------------------------------------ |
-| Database Schema            | `prisma/schema.prisma` (`Device` model + Enums)               |
-| Zod & Swagger Schemas      | `src/schemas/device.schema.ts`                                |
-| Device Repository          | `src/repositories/device.repository.ts`                      |
-| Registry Service           | `src/services/device-registry.service.ts`                    |
-| Device Service             | `src/services/device.service.ts`                             |
-| Device Controller          | `src/controllers/device.controller.ts`                       |
-| Device Routes              | `src/routes/device.route.ts`                                  |
-| Vitest Test Suite          | `tests/device.test.ts` (13 tests)                             |
+| Device Tools               | `src/services/ai/tools/device.tools.ts` (10 tools)           |
+| Tool Registry Integration  | `src/services/ai/tools/index.ts`                             |
+| Vitest Test Suite          | `tests/device-tools.test.ts` (14 tests)                      |
 
-### Features & Business Rules
+### Features & Security Rules
 
-- **Virtual Device Registry**: Register hardware-agnostic virtual devices with standard types (`LIGHT`, `FAN`, `THERMOSTAT`, `LOCK`, `CAMERA`, `SENSOR`, `SWITCH`, `CUSTOM`).
-- **Capability Resolution**: `DeviceRegistryService` maps default capabilities by device type (e.g. `LIGHT` → `['turnOn', 'turnOff', 'brightness']`, `THERMOSTAT` → `['temperature', 'setPoint']`).
-- **Connection Simulation**: `POST /devices/:id/connect` (`ONLINE`/`CONNECTED`) and `POST /devices/:id/disconnect` (`OFFLINE`/`DISCONNECTED`).
-- **Project Ownership Validation**: Enforces strict user ownership across all device management operations.
+- **10 AI Device Tools**: `listDevices`, `getDevice`, `connectDevice`, `disconnectDevice`, `turnOnDevice`, `turnOffDevice`, `setBrightness`, `setTemperature`, `lockDevice`, `unlockDevice`.
+- **Capability Validation**: Validates whether the target device supports requested capabilities before command execution.
+- **Online Connection Check**: Verifies that state mutation commands are executed only on connected/online devices.
+- **Provider-Agnostic Advertising**: All AI providers (Gemini, Claude, OpenAI, Ollama) automatically gain device control capabilities.
 
 ---
 
@@ -316,8 +318,8 @@ AutomationExecution ─┬─ id, status, executedAt, input, output, error, auto
 ## Test Coverage
 
 ```
-Test Files  14 passed (14)
-     Tests  161 passed (161)
+Test Files  15 passed (15)
+     Tests  175 passed (175)
 
   ✓ tests/health.test.ts           (2 tests)
   ✓ tests/auth.test.ts             (9 tests)
@@ -333,6 +335,7 @@ Test Files  14 passed (14)
   ✓ tests/tools.test.ts            (17 tests)
   ✓ tests/refresh-token.test.ts    (12 tests)
   ✓ tests/device.test.ts           (13 tests)
+  ✓ tests/device-tools.test.ts     (14 tests)
 ```
 
 ---
@@ -414,7 +417,7 @@ backend/
 │   │   ├── device-registry.service.ts # Device capability resolution logic
 │   │   ├── device.service.ts          # Device business & connection state logic
 │   │   ├── ai/                        # AI, RAG & Vector Search Infrastructure
-│   │   │   └── tools/                 # Tool Calling Framework
+│   │   │   └── tools/                 # Tool Calling Framework (22 tools including 10 device tools)
 │   │   └── automation/                # Automation Engine Module
 │   ├── types/
 │   │   ├── index.ts                   # Main type exports
@@ -437,7 +440,8 @@ backend/
 │   ├── automation.test.ts             # Automation Engine tests (13)
 │   ├── tools.test.ts                  # Tool Calling Framework tests (17)
 │   ├── refresh-token.test.ts          # Refresh Token Rotation tests (12)
-│   └── device.test.ts                 # Device Framework tests (13)
+│   ├── device.test.ts                 # Device Framework tests (13)
+│   └── device-tools.test.ts           # Device Tool Integration tests (14)
 ├── docs/
 │   └── auth-architecture.md           # Auth system documentation
 ├── PROGRESS.md                        # Overall development progress report
@@ -455,7 +459,6 @@ The following modules are planned for future implementation:
 
 | Module                     | Purpose                                                          | Priority |
 | :------------------------- | :--------------------------------------------------------------- | :------- |
-| Device Tool Integration    | Tool Calling Framework integration for AI device control         | Medium   |
 | Device Automation Triggers | Automation Engine triggers & actions for device state events     | Medium   |
 
 ---
