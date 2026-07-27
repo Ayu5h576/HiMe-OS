@@ -161,7 +161,7 @@ Routes
 ## Phase 16 — Device Automation Triggers Module
 
 **Status**: ✅ Complete  
-**Commit**: Pending — *Implement Device Automation Triggers connecting Device Framework state events with Automation Engine*
+**Commit**: `2c85825` — *Implement Device Automation Triggers connecting Device Framework state events with Automation Engine*
 
 ### What Was Built
 
