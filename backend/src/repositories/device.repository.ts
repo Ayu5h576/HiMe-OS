@@ -202,4 +202,15 @@ export class DeviceRepository {
       throw err;
     }
   }
+
+  async countTotal(): Promise<number> {
+    try {
+      return await this.db.device.count();
+    } catch (err) {
+      if (env.NODE_ENV === 'test') {
+        return this.deviceStore.size;
+      }
+      throw err;
+    }
+  }
 }

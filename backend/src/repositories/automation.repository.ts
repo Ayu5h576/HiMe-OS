@@ -196,4 +196,15 @@ export class AutomationRepository {
       throw err;
     }
   }
+
+  async countTotal(): Promise<number> {
+    try {
+      return await this.db.automation.count();
+    } catch (err) {
+      if (env.NODE_ENV === 'test') {
+        return this.automationStore.size;
+      }
+      throw err;
+    }
+  }
 }
