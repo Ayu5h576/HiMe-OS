@@ -16,6 +16,16 @@ import {
   LockDeviceTool,
   UnlockDeviceTool,
 } from './device.tools';
+import {
+  GetSystemInfoTool,
+  ListFilesTool,
+  ReadFileTool,
+  CopyFileTool,
+  LaunchApplicationTool,
+  GetClipboardTool,
+  SetClipboardTool,
+  TakeScreenshotTool,
+} from './desktop.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -28,6 +38,7 @@ export * from './project.tools';
 export * from './conversation.tools';
 export * from './automation.tools';
 export * from './device.tools';
+export * from './desktop.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -59,6 +70,16 @@ export function initializeSystemTools(
   registry.registerTool(new SetTemperatureTool());
   registry.registerTool(new LockDeviceTool());
   registry.registerTool(new UnlockDeviceTool());
+
+  // Desktop Agent Tools
+  registry.registerTool(new GetSystemInfoTool());
+  registry.registerTool(new ListFilesTool());
+  registry.registerTool(new ReadFileTool());
+  registry.registerTool(new CopyFileTool());
+  registry.registerTool(new LaunchApplicationTool());
+  registry.registerTool(new GetClipboardTool());
+  registry.registerTool(new SetClipboardTool());
+  registry.registerTool(new TakeScreenshotTool());
 
   return registry;
 }
