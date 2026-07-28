@@ -26,6 +26,11 @@ import {
   SetClipboardTool,
   TakeScreenshotTool,
 } from './desktop.tools';
+import {
+  StartVoiceSessionTool,
+  TranscribeAudioTool,
+  SynthesizeSpeechTool,
+} from './voice.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -39,6 +44,7 @@ export * from './conversation.tools';
 export * from './automation.tools';
 export * from './device.tools';
 export * from './desktop.tools';
+export * from './voice.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -80,6 +86,11 @@ export function initializeSystemTools(
   registry.registerTool(new GetClipboardTool());
   registry.registerTool(new SetClipboardTool());
   registry.registerTool(new TakeScreenshotTool());
+
+  // Voice Interface Tools
+  registry.registerTool(new StartVoiceSessionTool());
+  registry.registerTool(new TranscribeAudioTool());
+  registry.registerTool(new SynthesizeSpeechTool());
 
   return registry;
 }

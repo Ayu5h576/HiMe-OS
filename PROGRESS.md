@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 28, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 244/244 passing (100% across 19 test suites)  
-> **Total API Endpoints**: 72 Endpoints  
-> **Total Lines of Code Added**: ~22,000+
+> **Total Test Pass Rate**: 265/265 passing (100% across 20 test suites)  
+> **Total API Endpoints**: 77 Endpoints  
+> **Total Lines of Code Added**: ~24,500+
 
 ---
 
@@ -32,11 +32,12 @@
 20. [Phase 17 — Scheduled Cron Engine](#phase-17--scheduled-cron-engine)
 21. [Phase 18 — Runtime & User Interaction Platform](#phase-18--runtime--user-interaction-platform-module)
 22. [Phase 19 — Desktop Agent Infrastructure](#phase-19--desktop-agent-infrastructure)
-23. [Database Schema](#database-schema)
-24. [API Endpoints Summary](#api-endpoints-summary)
-25. [Test Coverage](#test-coverage)
-26. [File Structure](#file-structure)
-27. [What's Next](#whats-next)
+23. [Phase 20 — Voice Interface Abstraction](#phase-20--voice-interface-abstraction)
+24. [Database Schema](#database-schema)
+25. [API Endpoints Summary](#api-endpoints-summary)
+26. [Test Coverage](#test-coverage)
+27. [File Structure](#file-structure)
+28. [What's Next](#whats-next)
 
 ---
 
@@ -256,6 +257,43 @@ Routes
 | `POST` | `/desktop/screenshot` | Capture screenshot (abstraction) |
 | `POST` | `/desktop/notify` | Bridge notification to gateway |
 
+---
+
+## Phase 20 — Voice Interface Abstraction
+
+**Status**: ✅ Complete | **Commit**: `Pending Push`  
+*Implement provider-agnostic Voice Interface Abstraction integrating STT, TTS, Session Management, Audio Stream Processing, Activity Logging, Tool Calling, and Conversation Engine*
+
+### What Was Built
+
+| Component | File(s) |
+| :--- | :--- |
+| Provider Interface | `src/services/voice/voice-provider.interface.ts` — ISTTProvider, ITTSProvider, AudioPayload, STTResult, TTSResult |
+| Provider Registry | `src/services/voice/voice-provider-registry.ts` — Singleton registry for dynamic STT/TTS provider resolution |
+| Mock Provider | `src/services/voice/providers/mock.provider.ts` — Deterministic MockSTTProvider & MockTTSProvider |
+| STT Service | `src/services/voice/stt.service.ts` — STT abstraction layer |
+| TTS Service | `src/services/voice/tts.service.ts` — TTS abstraction layer |
+| Voice Session Service | `src/services/voice/voice-session.service.ts` — In-memory session lifecycle (start, pause, resume, end, timeout) |
+| Audio Stream Service | `src/services/voice/audio-stream.service.ts` — Payload validation, size capping (10 MB), format/encoding checks |
+| Voice Activity Service | `src/services/voice/voice-activity.service.ts` — Append-only ring buffer for auditing (1,000 entries max) |
+| Voice Service | `src/services/voice/voice.service.ts` — Orchestrator linking STT/TTS, Sessions, Conversation & AI Provider |
+| Voice Tools (×3) | `src/services/ai/tools/voice.tools.ts` — `startVoiceSession`, `transcribeAudio`, `synthesizeSpeech` |
+| Voice Schema | `src/schemas/voice.schema.ts` — Zod validators + OpenAPI Swagger documentation |
+| Voice Controller | `src/controllers/voice.controller.ts` — 5 HTTP handlers |
+| Voice Routes | `src/routes/voice.route.ts` — 5 authenticated routes |
+| Vitest Test Suite | `tests/voice.test.ts` — 21 tests across 7 describe blocks |
+
+### New API Endpoints (5)
+
+| Method | URL | Description |
+| --- | --- | --- |
+| `POST` | `/voice/session/start` | Start a voice session attached to a conversation |
+| `POST` | `/voice/session/end` | End an active voice session |
+| `POST` | `/voice/transcribe` | Transcribe audio, run Conversation Engine + AI Provider, synthesize response |
+| `POST` | `/voice/synthesize` | Standalone Text-to-Speech synthesis |
+| `GET` | `/voice/providers` | List registered STT/TTS voice providers |
+
+
 ```prisma
 enum UserRole        { USER | ADMIN }
 enum TaskStatus      { TODO | IN_PROGRESS | COMPLETED | CANCELLED }
@@ -372,15 +410,22 @@ enum ConnectionState { CONNECTED | DISCONNECTED }
 * `POST /desktop/screenshot`
 * `POST /desktop/notify`
 
-**Total Endpoints**: 72
+### 13. Voice Interface (5 Endpoints)
+* `POST /voice/session/start`
+* `POST /voice/session/end`
+* `POST /voice/transcribe`
+* `POST /voice/synthesize`
+* `GET /voice/providers`
+
+**Total Endpoints**: 77
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  19 passed (19)
-     Tests  244 passed (244)
+Test Files  20 passed (20)
+     Tests  265 passed (265)
 
   ✓ tests/health.test.ts                (2 tests)
   ✓ tests/auth.test.ts                  (9 tests)
@@ -400,7 +445,8 @@ Test Files  19 passed (19)
   ✓ tests/device-automation.test.ts     (7 tests)
   ✓ tests/cron.test.ts                  (14 tests)
   ✓ tests/runtime.test.ts               (10 tests)
-  ✓ tests/desktop.test.ts               (38 tests)  ← Phase 19
+  ✓ tests/desktop.test.ts               (38 tests)
+  ✓ tests/voice.test.ts                 (21 tests)  ← Phase 20
 ```
 
 ---
@@ -417,7 +463,6 @@ The following modules are planned for future implementation:
 
 | Module | Purpose | Priority |
 | :--- | :--- | :--- |
-| Voice Interface Abstraction | STT/TTS bridge layer connecting voice input/output to the Conversation Engine | High |
 | Multi-Agent Orchestration | Spawn, coordinate, and supervise multiple specialized AI sub-agents | High |
 | Cloud Sync Gateway | Sync local HiMe OS state to cloud for multi-device access | Medium |
 | Plugin Marketplace Engine | Dynamic plugin registry for first- and third-party capability extensions | Medium |

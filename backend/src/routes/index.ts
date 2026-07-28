@@ -12,6 +12,7 @@ import { deviceRoutes } from './device.route';
 import { notificationRoutes } from './notification.routes';
 import { runtimeRoutes } from './runtime.routes';
 import { desktopRoutes } from './desktop.route';
+import { voiceRoutes } from './voice.route';
 
 export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
@@ -27,4 +28,5 @@ export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(notificationRoutes);
   await fastify.register(runtimeRoutes);
   await fastify.register(desktopRoutes);
+  await fastify.register(voiceRoutes);
 };
