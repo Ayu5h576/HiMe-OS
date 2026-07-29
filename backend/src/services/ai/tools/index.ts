@@ -31,6 +31,14 @@ import {
   TranscribeAudioTool,
   SynthesizeSpeechTool,
 } from './voice.tools';
+import {
+  AnalyzeImageTool,
+  ExtractTextTool,
+  DescribeSceneTool,
+  DetectObjectsTool,
+  ScanQRCodeTool,
+  AnalyzeScreenshotTool,
+} from './vision.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -45,6 +53,7 @@ export * from './automation.tools';
 export * from './device.tools';
 export * from './desktop.tools';
 export * from './voice.tools';
+export * from './vision.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -91,6 +100,14 @@ export function initializeSystemTools(
   registry.registerTool(new StartVoiceSessionTool());
   registry.registerTool(new TranscribeAudioTool());
   registry.registerTool(new SynthesizeSpeechTool());
+
+  // Computer Vision Tools
+  registry.registerTool(new AnalyzeImageTool());
+  registry.registerTool(new ExtractTextTool());
+  registry.registerTool(new DescribeSceneTool());
+  registry.registerTool(new DetectObjectsTool());
+  registry.registerTool(new ScanQRCodeTool());
+  registry.registerTool(new AnalyzeScreenshotTool());
 
   return registry;
 }
