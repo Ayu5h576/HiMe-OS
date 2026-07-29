@@ -136,6 +136,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const storageUsedGB = systemMetrics ? (systemMetrics.storage.usedBytes / (1024 * 1024 * 1024)).toFixed(0) : '240';
   const storageTotalGB = systemMetrics ? (systemMetrics.storage.totalBytes / (1024 * 1024 * 1024)).toFixed(0) : '512';
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getHealthBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'DEGRADED':
+        return 'bg-amber-400/20 text-amber-400 border-amber-400/40';
+      case 'CRITICAL':
+        return 'bg-rose-400/20 text-rose-400 border-rose-400/40';
+      default:
+        return 'bg-emerald-400/20 text-emerald-400 border-emerald-400/40';
+    }
+  };
+
   return (
     <div className="space-y-8 pb-12">
       {/* Toast Feedback Bar */}
@@ -158,7 +176,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              Good Evening, <br />
+              {getGreeting()}, <br />
               <span className="text-cyan-400 neon-text-cyan">Personal AI Command Center</span>
             </h1>
 
@@ -197,7 +215,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="w-full lg:w-80 p-6 rounded-3xl glass border border-white/20 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] font-semibold text-white/50">
               <span>AGENT HEALTH</span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400 border border-emerald-400/40 text-[10px] font-bold">
+              <span className={`px-2.5 py-0.5 rounded-full border text-[10px] font-bold ${getHealthBadgeStyle(agentHealth?.health.status || 'HEALTHY')}`}>
                 {agentHealth?.health.status || 'HEALTHY'}
               </span>
             </div>
