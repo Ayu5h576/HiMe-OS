@@ -48,6 +48,20 @@ import {
   DownloadFileTool,
   UploadFileTool,
 } from './browser.tools';
+import {
+  GetBatteryStatusTool,
+  GetCpuUsageTool,
+  GetRamUsageTool,
+  GetRunningAppsTool,
+  NativeLaunchAppTool,
+  NativeCloseAppTool,
+  LockComputerTool,
+  ShutdownComputerTool,
+  RestartComputerTool,
+  SetVolumeTool,
+  SetBrightnessTool,
+  WatchFolderTool,
+} from './runtime-agent.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -64,6 +78,7 @@ export * from './desktop.tools';
 export * from './voice.tools';
 export * from './vision.tools';
 export * from './browser.tools';
+export * from './runtime-agent.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -127,6 +142,20 @@ export function initializeSystemTools(
   registry.registerTool(new TakeBrowserScreenshotTool());
   registry.registerTool(new DownloadFileTool());
   registry.registerTool(new UploadFileTool());
+
+  // Native Runtime Agent Tools
+  registry.registerTool(new GetBatteryStatusTool());
+  registry.registerTool(new GetCpuUsageTool());
+  registry.registerTool(new GetRamUsageTool());
+  registry.registerTool(new GetRunningAppsTool());
+  registry.registerTool(new NativeLaunchAppTool());
+  registry.registerTool(new NativeCloseAppTool());
+  registry.registerTool(new LockComputerTool());
+  registry.registerTool(new ShutdownComputerTool());
+  registry.registerTool(new RestartComputerTool());
+  registry.registerTool(new SetVolumeTool());
+  registry.registerTool(new SetBrightnessTool());
+  registry.registerTool(new WatchFolderTool());
 
   return registry;
 }

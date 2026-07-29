@@ -2,9 +2,9 @@
 
 > **Last Updated**: July 29, 2026  
 > **Repository**: [https://github.com/Ayu5h576/HiMe-OS](https://github.com/Ayu5h576/HiMe-OS)  
-> **Total Test Pass Rate**: 324/324 passing (100% across 23 test suites)  
-> **Total API Endpoints**: 94 Endpoints  
-> **Total Lines of Code Added**: ~32,000+
+> **Total Test Pass Rate**: 350/350 passing (100% across 24 test suites)  
+> **Total API Endpoints**: 102 Endpoints  
+> **Total Lines of Code Added**: ~34,500+
 
 ---
 
@@ -36,11 +36,12 @@
 24. [Phase 21 — Multi-Agent Orchestration Framework](#phase-21--multi-agent-orchestration-framework)
 25. [Phase 22 — Computer Vision Platform](#phase-22--computer-vision-platform)
 26. [Phase 23 — Browser Automation Platform](#phase-23--browser-automation-platform)
-27. [Database Schema](#database-schema)
-28. [API Endpoints Summary](#api-endpoints-summary)
-29. [Test Coverage](#test-coverage)
-30. [File Structure](#file-structure)
-31. [What's Next](#whats-next)
+27. [Phase 24 — Native Desktop Runtime Agent](#phase-24--native-desktop-runtime-agent)
+28. [Database Schema](#database-schema)
+29. [API Endpoints Summary](#api-endpoints-summary)
+30. [Test Coverage](#test-coverage)
+31. [File Structure](#file-structure)
+32. [What's Next](#whats-next)
 
 ---
 
@@ -369,7 +370,7 @@ Routes
 
 ## Phase 23 — Browser Automation Platform
 
-**Status**: ✅ Complete | **Commit**: TBD  
+**Status**: ✅ Complete | **Commit**: `950d352`  
 *Implement provider-agnostic Browser Automation Platform supporting session management, navigation controls, DOM extraction, form automation, screenshots, cookie persistence, file downloads, tool calling, and multi-agent integration*
 
 ### What Was Built
@@ -400,6 +401,42 @@ Routes
 | `POST` | `/browser/screenshot` | Capture page, viewport, or element screenshot |
 | `GET` | `/browser/session` | List active sessions or get session state |
 | `DELETE` | `/browser/session` | Close active browser session |
+
+---
+
+## Phase 24 — Native Desktop Runtime Agent
+
+**Status**: ✅ Complete | **Commit**: TBD  
+*Implement Native Desktop Runtime Agent providing local machine system monitoring, process management, command execution, file watching, event streaming, heartbeat health reporting, and HMAC command channel*
+
+### What Was Built
+
+| Component | File(s) |
+| :--- | :--- |
+| Types & Contracts | `src/services/runtime-agent/types.ts` — BatteryInfo, CpuInfo, RamInfo, StorageInfo, SystemInfo, ProcessInfo, FileChangeEvent, AgentEvent, AgentHealthReport |
+| System Monitors | `src/services/runtime-agent/` — SystemMonitorService, BatteryMonitorService, CpuMonitorService, RamMonitorService, StorageMonitorService |
+| Process & Command Engine | `src/services/runtime-agent/` — ProcessManagerService, CommandExecutorService (lock, sleep, volume, brightness, shutdown) |
+| File Watching & Events | `src/services/runtime-agent/` — FileWatcherService (Desktop/Downloads/Documents), EventStreamService (ring buffer + subscriptions) |
+| Health & Secure Channel | `src/services/runtime-agent/` — HealthReporterService (heartbeat/latency/uptime), CommandChannelService (HMAC security) |
+| Runtime Agent Service | `src/services/runtime-agent/runtime-agent.service.ts` — Central Native Runtime Agent orchestrator |
+| Runtime Agent Tools (×12)| `src/services/ai/tools/runtime-agent.tools.ts` — `getBatteryStatus`, `getCpuUsage`, `getRamUsage`, `getRunningApps`, `launchNativeApp`, `closeNativeApp`, `lockComputer`, `shutdownComputer`, `restartComputer`, `setVolume`, `setBrightness`, `watchFolder` |
+| Runtime Agent Schema | `src/schemas/runtime-agent.schema.ts` — Zod validators + OpenAPI Swagger documentation |
+| Runtime Agent Controller| `src/controllers/runtime-agent.controller.ts` — 8 HTTP handlers |
+| Runtime Agent Routes | `src/routes/runtime-agent.route.ts` — 8 authenticated routes (`/runtime-agent/*`) |
+| Vitest Test Suite | `tests/runtime-agent.test.ts` — 26 tests across 8 describe blocks |
+
+### New API Endpoints (8)
+
+| Method | URL | Description |
+| --- | --- | --- |
+| `GET` | `/runtime-agent/status` | Get native runtime agent status, heartbeat, and health report |
+| `GET` | `/runtime-agent/system` | Get complete system metrics (OS, CPU, RAM, Storage, Battery) |
+| `GET` | `/runtime-agent/processes` | List active running processes and resource consumption |
+| `POST` | `/runtime-agent/apps/launch` | Launch allowlisted application on local desktop machine |
+| `POST` | `/runtime-agent/apps/close` | Terminate running application or process |
+| `POST` | `/runtime-agent/system/action` | Execute native system command (lock, sleep, volume, brightness, shutdown) |
+| `GET` | `/runtime-agent/battery` | Get detailed battery metrics and charging state |
+| `GET` | `/runtime-agent/events` | Retrieve real-time agent event stream logs |
 
 
 ```prisma
@@ -548,15 +585,25 @@ enum ConnectionState { CONNECTED | DISCONNECTED }
 * `GET /browser/session`
 * `DELETE /browser/session`
 
-**Total Endpoints**: 94
+### 17. Native Desktop Runtime Agent (8 Endpoints)
+* `GET /runtime-agent/status`
+* `GET /runtime-agent/system`
+* `GET /runtime-agent/processes`
+* `POST /runtime-agent/apps/launch`
+* `POST /runtime-agent/apps/close`
+* `POST /runtime-agent/system/action`
+* `GET /runtime-agent/battery`
+* `GET /runtime-agent/events`
+
+**Total Endpoints**: 102
 
 ---
 
 ## Test Coverage
 
 ```
-Test Files  23 passed (23)
-     Tests  324 passed (324)
+Test Files  24 passed (24)
+     Tests  350 passed (350)
 
   ✓ tests/health.test.ts                (2 tests)
   ✓ tests/auth.test.ts                  (9 tests)
@@ -580,7 +627,8 @@ Test Files  23 passed (23)
   ✓ tests/voice.test.ts                 (21 tests)
   ✓ tests/agents.test.ts                (14 tests)
   ✓ tests/vision.test.ts                (23 tests)
-  ✓ tests/browser.test.ts               (22 tests)  ← Phase 23
+  ✓ tests/browser.test.ts               (22 tests)
+  ✓ tests/runtime-agent.test.ts        (26 tests)  ← Phase 24
 ```
 
 ---

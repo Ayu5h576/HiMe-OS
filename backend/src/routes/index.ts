@@ -16,6 +16,7 @@ import { voiceRoutes } from './voice.route';
 import { agentsRoutes } from './agents.route';
 import { visionRoutes } from './vision.route';
 import { browserRoutes } from './browser.route';
+import { runtimeAgentRoutes } from './runtime-agent.route';
 
 export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthRoutes);
@@ -35,4 +36,5 @@ export const routes: FastifyPluginAsync = async (fastify) => {
   await fastify.register(agentsRoutes);
   await fastify.register(visionRoutes);
   await fastify.register(browserRoutes);
+  await fastify.register(runtimeAgentRoutes);
 };
