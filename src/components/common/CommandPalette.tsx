@@ -13,8 +13,12 @@ import {
   Sparkles,
   ArrowRight,
   Command,
-  X
+  X,
+  Eye,
+  Globe,
+  Activity
 } from 'lucide-react';
+import { himeApi } from '../../services/api/himeApi';
 import type { OSPage } from '../../types';
 
 interface CommandPaletteProps {
@@ -46,9 +50,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const commands = [
     { id: 'nav-dashboard', label: 'Go to OS Dashboard', page: 'dashboard' as OSPage, icon: <Search className="w-4 h-4 text-cyan-400" />, type: 'nav' },
     { id: 'nav-ai', label: 'Open AI Assistant', page: 'ai-assistant' as OSPage, icon: <Bot className="w-4 h-4 text-cyan-400" />, type: 'nav' },
+    { id: 'nav-vision', label: 'Vision Perception Platform (OCR/Objects)', page: 'vision' as OSPage, icon: <Eye className="w-4 h-4 text-amber-400" />, type: 'nav' },
+    { id: 'nav-browser', label: 'Browser Automation Platform (Chromium)', page: 'browser' as OSPage, icon: <Globe className="w-4 h-4 text-blue-400" />, type: 'nav' },
     { id: 'nav-memory', label: 'Explore AI Memory Graph', page: 'ai-memory' as OSPage, icon: <Brain className="w-4 h-4 text-purple-400" />, type: 'nav' },
     { id: 'nav-automation', label: 'Build Workflow Automations', page: 'automation' as OSPage, icon: <Workflow className="w-4 h-4 text-blue-400" />, type: 'nav' },
-    { id: 'nav-devices', label: 'Manage Connected Devices', page: 'device-control' as OSPage, icon: <HardDrive className="w-4 h-4 text-emerald-400" />, type: 'nav' },
+    { id: 'nav-devices', label: 'Manage Devices & Process Monitor', page: 'device-control' as OSPage, icon: <HardDrive className="w-4 h-4 text-emerald-400" />, type: 'nav' },
+    { id: 'nav-activity', label: 'Unified Activity Audit Log', page: 'activity' as OSPage, icon: <Activity className="w-4 h-4 text-rose-400" />, type: 'nav' },
     { id: 'nav-github', label: 'Inspect GitHub Workspace', page: 'github' as OSPage, icon: <Code2 className="w-4 h-4 text-gray-200" />, type: 'nav' },
     { id: 'nav-analytics', label: 'View System Analytics & Metrics', page: 'analytics' as OSPage, icon: <BarChart3 className="w-4 h-4 text-amber-400" />, type: 'nav' },
     { id: 'nav-files', label: 'Search AI File Explorer', page: 'file-explorer' as OSPage, icon: <FolderGit2 className="w-4 h-4 text-cyan-300" />, type: 'nav' },
@@ -86,14 +93,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     setAiResult(null);
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: search })
-      });
-      const data = await res.json();
-      setAiResult(data.reply || data.fallbackReply || "AI Command processed.");
-    } catch (err) {
+      await himeApi.ensureAuthenticated();
+      const res = await himeApi.sendAIChat(search);
+      setAiResult(res.content || "AI Command processed.");
+    } catch (err: any) {
       setAiResult("HiMe OS executed local backup process for: " + search);
     } finally {
       setAiWorking(false);

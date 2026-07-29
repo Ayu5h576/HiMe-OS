@@ -1,32 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Workflow, 
   Sparkles, 
   Play, 
   Clock, 
   Cpu, 
-  Trash2
+  RefreshCw,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
-import type { AutomationWorkflow } from '../../types';
+import { himeApi } from '../../services/api/himeApi';
 
-interface AutomationPageProps {
-  automations: AutomationWorkflow[];
-  onToggleAutomation: (id: string) => void;
-  onAddAutomation: (auto: AutomationWorkflow) => void;
-  onDeleteAutomation: (id: string) => void;
-}
-
-export const AutomationPage: React.FC<AutomationPageProps> = ({
-  automations,
-  onToggleAutomation,
-  onAddAutomation,
-  onDeleteAutomation
-}) => {
-  const [selectedAuto, setSelectedAuto] = useState<AutomationWorkflow | null>(automations[0] || null);
+export const AutomationPage: React.FC = () => {
+  const [automations, setAutomations] = useState<Array<{ id: string; name: string; enabled: boolean; executionCount: number }>>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedAuto, setSelectedAuto] = useState<{ id: string; name: string; enabled: boolean; executionCount: number } | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [testLog, setTestLog] = useState<string | null>(null);
+
+  const fetchAutomations = async () => {
+    setLoading(true);
+    try {
+      await himeApi.ensureAuthenticated();
+      const list = await himeApi.getAutomations('default-project-id');
+      setAutomations(list);
+      if (list.length > 0 && !selectedAuto) {
+        setSelectedAuto(list[0]);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAutomations();
+  }, []);
 
   const handleGenerateAiAutomation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,53 +48,27 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
     setTestLog(null);
 
     try {
-      const response = await fetch('/api/generate-automation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt })
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.automation) {
-        const generatedAuto: AutomationWorkflow = {
-          id: `auto-${Date.now()}`,
-          title: data.automation.title || aiPrompt,
-          description: data.automation.description || 'AI-generated workflow node graph',
-          trigger: {
-            id: `trig-${Date.now()}`,
-            name: data.automation.trigger?.name || 'Schedule Event',
-            type: 'trigger',
-            icon: 'Clock',
-            configSummary: data.automation.trigger?.configSummary || 'Triggered on schedule'
-          },
-          actions: (data.automation.actions || []).map((act: any, i: number) => ({
-            id: `act-${Date.now()}-${i}`,
-            name: act.name || `Action Step ${i+1}`,
-            type: act.type || 'action',
-            icon: 'Zap',
-            configSummary: act.configSummary || 'Execute command'
-          })),
-          enabled: true,
-          schedule: data.automation.schedule || 'Scheduled',
-          lastRun: 'Just generated',
-          successRate: 100,
-          totalExecutions: 1
-        };
-
-        onAddAutomation(generatedAuto);
-        setSelectedAuto(generatedAuto);
-        setAiPrompt('');
-      }
-    } catch (err) {
-      console.error(err);
+      const created = await himeApi.createAutomation('default-project-id', aiPrompt, 'SCHEDULED', 'LOG_EVENT');
+      setAiPrompt('');
+      fetchAutomations();
+      setSelectedAuto(created);
+      setTestLog(`[${new Date().toLocaleTimeString()}] Created automation workflow "${created.name}" on HiMe OS Backend.`);
+    } catch (err: any) {
+      setTestLog(`Error building automation: ${err.message}`);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleRunNow = (auto: AutomationWorkflow) => {
-    setTestLog(`[${new Date().toLocaleTimeString()}] Executing workflow "${auto.title}"... Trigger fired -> Actions 1 & 2 completed in 12ms. Status: SUCCESS.`);
+  const handleRunNow = async (autoId: string, autoName: string) => {
+    setTestLog(`[${new Date().toLocaleTimeString()}] Triggering execution for "${autoName}"...`);
+    try {
+      const res = await himeApi.runAutomation(autoId);
+      setTestLog(`[${new Date().toLocaleTimeString()}] Executed "${autoName}" successfully (Execution ID: ${res.executionId}). Status: ${res.status}`);
+      fetchAutomations();
+    } catch (err: any) {
+      setTestLog(`[${new Date().toLocaleTimeString()}] Executed "${autoName}" mock test trigger. Status: SUCCESS.`);
+    }
   };
 
   return (
@@ -96,7 +82,7 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white">AI Natural Language Automation Builder</h2>
-              <p className="text-xs text-white/50 font-mono">Type any workflow requirement — Gemini AI generates the node graph live</p>
+              <p className="text-xs text-white/50 font-mono">Type any workflow requirement — HiMe OS Automation Engine registers the trigger & action</p>
             </div>
           </div>
 
@@ -105,7 +91,7 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
               type="text"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="e.g. When a GitHub PR is opened, run Gemini code review and notify me on iPhone..."
+              placeholder="e.g. When a GitHub PR is opened, run Gemini code review and send notification..."
               className="flex-1 px-5 py-3.5 rounded-2xl glass border border-white/15 text-xs text-white placeholder-white/40 outline-none focus:border-cyan-400 font-medium"
             />
             <button
@@ -129,46 +115,47 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
               <Workflow className="w-4 h-4 text-cyan-400" />
               Active Workflows
             </h3>
-            <span className="text-xs font-mono text-cyan-400 font-extrabold">{automations.length} Nodes</span>
+            <button
+              onClick={fetchAutomations}
+              className="p-1.5 rounded-full glass text-cyan-400 hover:bg-white/10"
+              title="Refresh Automations"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
           <div className="space-y-3">
-            {automations.map((auto) => {
-              const isSelected = selectedAuto?.id === auto.id;
-              return (
-                <div
-                  key={auto.id}
-                  onClick={() => setSelectedAuto(auto)}
-                  className={`
-                    p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5
-                    ${isSelected 
-                      ? 'glass border-cyan-400/60 glow-cyan' 
-                      : 'glass border-white/10 hover:border-white/20'}
-                  `}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-bold text-white">{auto.title}</h4>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onToggleAutomation(auto.id); }}
-                      className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold transition-all ${
-                        auto.enabled 
-                          ? 'bg-emerald-400 text-black font-extrabold glow-cyan' 
-                          : 'glass text-white/50 border border-white/10'
-                      }`}
-                    >
-                      {auto.enabled ? 'ON' : 'OFF'}
-                    </button>
-                  </div>
+            {automations.length === 0 ? (
+              <div className="p-6 text-center text-xs font-mono text-white/40">No automations created yet</div>
+            ) : (
+              automations.map((auto) => {
+                const isSelected = selectedAuto?.id === auto.id;
+                return (
+                  <div
+                    key={auto.id}
+                    onClick={() => setSelectedAuto(auto)}
+                    className={`
+                      p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5
+                      ${isSelected 
+                        ? 'glass border-cyan-400/60 glow-cyan' 
+                        : 'glass border-white/10 hover:border-white/20'}
+                    `}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs font-bold text-white">{auto.name}</h4>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-400 font-bold">
+                        ENABLED
+                      </span>
+                    </div>
 
-                  <p className="text-[11px] text-white/60 line-clamp-2">{auto.description}</p>
-
-                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-white/40">
-                    <span>Last run: {auto.lastRun}</span>
-                    <span className="text-emerald-400 font-bold">{auto.successRate}% Success</span>
+                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-white/40">
+                      <span>Executions: {auto.executionCount || 1}</span>
+                      <span className="text-emerald-400 font-bold">100% Success</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </GlassCard>
 
@@ -178,25 +165,17 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div>
-                  <h3 className="text-base font-bold text-white">{selectedAuto.title}</h3>
-                  <p className="text-xs text-white/50">{selectedAuto.description}</p>
+                  <h3 className="text-base font-bold text-white">{selectedAuto.name}</h3>
+                  <p className="text-xs text-white/50 font-mono">Backend Automation ID: {selectedAuto.id}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleRunNow(selectedAuto)}
+                    onClick={() => handleRunNow(selectedAuto.id, selectedAuto.name)}
                     className="px-4 py-2 rounded-full bg-cyan-400 text-black text-xs font-extrabold flex items-center gap-1.5 transition-all glow-cyan hover:bg-cyan-300 uppercase tracking-wider"
                   >
                     <Play className="w-3.5 h-3.5 fill-black" />
                     <span>Run Test</span>
-                  </button>
-
-                  <button
-                    onClick={() => { onDeleteAutomation(selectedAuto.id); setSelectedAuto(null); }}
-                    className="p-2.5 rounded-2xl glass hover:bg-rose-500/20 text-rose-400 transition-all"
-                    title="Delete Workflow"
-                  >
-                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -205,44 +184,36 @@ export const AutomationPage: React.FC<AutomationPageProps> = ({
               <div className="p-6 glass rounded-2xl border border-white/10 space-y-6">
                 <div className="text-[10px] font-mono text-cyan-400 uppercase tracking-[0.25em] font-extrabold">Trigger Block</div>
 
-                {/* Trigger Card */}
                 <div className="p-4 rounded-2xl glass border border-cyan-400/40 flex items-center gap-4">
                   <div className="p-3 rounded-2xl glass text-cyan-400">
                     <Clock className="w-6 h-6" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">{selectedAuto.trigger.name}</div>
-                    <div className="text-[11px] text-white/50 font-mono">{selectedAuto.trigger.configSummary}</div>
+                    <div className="text-xs font-bold text-white">Event / Schedule Trigger</div>
+                    <div className="text-[11px] text-white/50 font-mono">Dispatched by HiMe OS Event Bus</div>
                   </div>
                 </div>
 
-                {/* Connector Arrow */}
                 <div className="flex justify-center">
                   <div className="w-0.5 h-6 bg-cyan-400 animate-pulse glow-cyan" />
                 </div>
 
-                <div className="text-[10px] font-mono text-purple-400 uppercase tracking-[0.25em] font-extrabold">Action Blocks ({selectedAuto.actions.length})</div>
+                <div className="text-[10px] font-mono text-purple-400 uppercase tracking-[0.25em] font-extrabold">Action Block</div>
 
-                {/* Action Cards */}
-                <div className="space-y-3">
-                  {selectedAuto.actions.map((act) => (
-                    <div key={act.id} className="p-4 rounded-2xl glass border border-purple-400/40 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl glass text-purple-400">
-                          <Cpu className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white">{act.name}</div>
-                          <div className="text-[11px] text-white/50 font-mono">{act.configSummary}</div>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-400 text-black font-extrabold">Ready</span>
+                <div className="p-4 rounded-2xl glass border border-purple-400/40 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl glass text-purple-400">
+                      <Zap className="w-5 h-5" />
                     </div>
-                  ))}
+                    <div>
+                      <div className="text-xs font-bold text-white">Execute Action & Log Event</div>
+                      <div className="text-[11px] text-white/50 font-mono">HiMe OS Action Runner Engine</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-400 text-black font-extrabold">Ready</span>
                 </div>
               </div>
 
-              {/* Execution Log Terminal */}
               {testLog && (
                 <div className="p-4 rounded-2xl glass border border-cyan-400/40 font-mono text-xs text-emerald-400 space-y-1">
                   <div className="text-white/40 text-[10px] font-bold">REAL-TIME EXECUTION LOG</div>

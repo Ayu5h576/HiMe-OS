@@ -192,7 +192,7 @@ describe('Native Desktop Runtime Agent (Phase 24)', () => {
       expect(toolReg.hasTool('shutdownComputer')).toBe(true);
       expect(toolReg.hasTool('restartComputer')).toBe(true);
       expect(toolReg.hasTool('setVolume')).toBe(true);
-      expect(toolReg.hasTool('setBrightness')).toBe(true);
+      expect(toolReg.hasTool('setDesktopBrightness')).toBe(true);
       expect(toolReg.hasTool('watchFolder')).toBe(true);
     });
 

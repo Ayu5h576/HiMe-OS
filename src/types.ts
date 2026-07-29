@@ -8,7 +8,10 @@ export type OSPage =
   | 'analytics'
   | 'file-explorer'
   | 'calendar'
-  | 'settings';
+  | 'settings'
+  | 'vision'
+  | 'browser'
+  | 'activity';
 
 export type GlowTheme = 'electric-blue' | 'neon-cyan' | 'royal-purple' | 'emerald' | 'charcoal-obsidian';
 

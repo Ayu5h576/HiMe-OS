@@ -12,7 +12,10 @@ import {
   CalendarCheck, 
   Settings,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Eye,
+  Globe,
+  Activity
 } from 'lucide-react';
 import type { OSPage } from '../../types';
 
@@ -32,12 +35,15 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
   const navItems: { page: OSPage; label: string; icon: React.ReactNode; badge?: string }[] = [
     { page: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { page: 'ai-assistant', label: 'AI Assistant', icon: <Bot className="w-5 h-5 text-cyan-400" />, badge: 'AI' },
+    { page: 'vision', label: 'Vision Perception', icon: <Eye className="w-5 h-5 text-amber-400" /> },
+    { page: 'browser', label: 'Browser Automation', icon: <Globe className="w-5 h-5 text-blue-400" /> },
     { page: 'ai-memory', label: 'AI Memory Graph', icon: <Brain className="w-5 h-5 text-purple-400" /> },
     { page: 'automation', label: 'Workflow Automations', icon: <Workflow className="w-5 h-5 text-blue-400" /> },
-    { page: 'device-control', label: 'Device Hub', icon: <HardDrive className="w-5 h-5 text-emerald-400" />, badge: '5' },
+    { page: 'device-control', label: 'Device Hub & Processes', icon: <HardDrive className="w-5 h-5 text-emerald-400" />, badge: '102' },
+    { page: 'activity', label: 'Activity Audit Log', icon: <Activity className="w-5 h-5 text-rose-400" /> },
+    { page: 'file-explorer', label: 'File Explorer', icon: <FolderGit2 className="w-5 h-5 text-cyan-300" /> },
     { page: 'github', label: 'GitHub Workspace', icon: <Code2 className="w-5 h-5 text-gray-200" /> },
     { page: 'analytics', label: 'System Analytics', icon: <BarChart3 className="w-5 h-5 text-amber-400" /> },
-    { page: 'file-explorer', label: 'File Explorer', icon: <FolderGit2 className="w-5 h-5 text-cyan-300" /> },
     { page: 'calendar', label: 'Calendar & Tasks', icon: <CalendarCheck className="w-5 h-5 text-indigo-400" /> },
     { page: 'settings', label: 'System Settings', icon: <Settings className="w-5 h-5 text-gray-400" /> },
   ];
@@ -67,7 +73,6 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
                   : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'}
               `}
             >
-              {/* Active Left Indicator Bar */}
               {isActive && (
                 <motion.div
                   layoutId="activeSideBarTab"
@@ -93,7 +98,6 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
                 </span>
               )}
 
-              {/* Tooltip on collapsed state */}
               {collapsed && (
                 <div className="absolute left-full ml-3 px-3 py-1.5 rounded-xl glass text-white text-xs whitespace-nowrap shadow-xl border border-white/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                   {item.label}
@@ -116,7 +120,7 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse glow-cyan" />
             </div>
             <p className="text-white/60 text-[10px] leading-relaxed font-light">
-              Gemini 3.6 Flash active with high-speed memory streaming.
+              HiMe OS Backend on localhost:4000 (102 APIs active).
             </p>
           </div>
         )}

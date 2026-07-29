@@ -45,9 +45,12 @@ export const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   const pageTitles: Record<OSPage, string> = {
     'dashboard': 'OS Dashboard',
     'ai-assistant': 'Neural AI Assistant',
+    'vision': 'Vision Perception',
+    'browser': 'Browser Automation',
     'ai-memory': 'AI Memory Graph',
     'automation': 'Workflow Automations',
     'device-control': 'Connected Devices',
+    'activity': 'Activity Audit Log',
     'github': 'GitHub Workspace',
     'analytics': 'System Analytics',
     'file-explorer': 'AI File Explorer',
@@ -93,7 +96,7 @@ export const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
         {/* Live AI Agent Active Indicator */}
         <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full glass border border-emerald-500/30 text-[10px] font-mono text-emerald-300 tracking-wider">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="uppercase font-semibold opacity-90">AI AGENT ACTIVE</span>
+          <span className="uppercase font-semibold opacity-90">102 ENDPOINTS ACTIVE</span>
         </div>
 
         {/* Audio Ambient Mute Toggle */}

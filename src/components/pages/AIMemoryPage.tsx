@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Brain, 
   Search, 
@@ -8,72 +8,127 @@ import {
   Sparkles,
   Trash2,
   X,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
+import { himeApi } from '../../services/api/himeApi';
 import type { MemoryNode } from '../../types';
 
-interface AIMemoryPageProps {
-  memories: MemoryNode[];
-  onAddMemory: (node: MemoryNode) => void;
-  onDeleteMemory: (id: string) => void;
-  onTogglePin: (id: string) => void;
-}
-
-export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
-  memories,
-  onAddMemory,
-  onDeleteMemory,
-  onTogglePin
-}) => {
+export const AIMemoryPage: React.FC = () => {
+  const [memories, setMemories] = useState<MemoryNode[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [minImportance, setMinImportance] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedNode, setSelectedNode] = useState<MemoryNode | null>(memories[0] || null);
+  const [selectedNode, setSelectedNode] = useState<MemoryNode | null>(null);
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'graph' | 'timeline'>('graph');
 
   // Form states for new memory
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState<MemoryNode['category']>('Project Context');
+  const [newCategory, setNewCategory] = useState<string>('Project Context');
   const [newContent, setNewContent] = useState('');
-  const [newImportance] = useState(85);
-  const [newTags, setNewTags] = useState('Gemini, Memory, Architecture');
+  const [newImportance, setNewImportance] = useState(85);
+  const [newTags, setNewTags] = useState('Gemini, Memory, HiMeOS');
 
   const categories = ['All', 'User Preference', 'Project Context', 'Fact', 'Code Snippet', 'System Rule', 'Interaction'];
+
+  const fetchMemories = async () => {
+    setLoading(true);
+    try {
+      await himeApi.ensureAuthenticated();
+      const list = await himeApi.getMemories('default-project-id');
+      const mapped: MemoryNode[] = list.map((m) => ({
+        id: m.id,
+        title: m.title,
+        category: (m.category as any) || 'Fact',
+        content: m.content,
+        importance: m.importance || 80,
+        createdAt: m.createdAt || new Date().toISOString(),
+        lastAccessed: new Date().toISOString(),
+        connections: [],
+        tags: ['HiMe', m.category],
+        pinned: m.pinned ?? true,
+      }));
+
+      setMemories(mapped);
+      if (mapped.length > 0 && !selectedNode) {
+        setSelectedNode(mapped[0]);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMemories();
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      fetchMemories();
+      return;
+    }
+
+    try {
+      const results = await himeApi.searchMemories(query);
+      if (results && results.length > 0) {
+        const mapped: MemoryNode[] = results.map((r) => ({
+          id: r.id,
+          title: r.title,
+          category: 'Fact',
+          content: r.content,
+          importance: Math.floor((r.score || 0.9) * 100),
+          createdAt: new Date().toISOString(),
+          lastAccessed: new Date().toISOString(),
+          connections: [],
+          tags: ['VectorSearch', 'Match'],
+          pinned: true,
+        }));
+        setMemories(mapped);
+        setSelectedNode(mapped[0]);
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleCreateMemory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    try {
+      await himeApi.createMemory('default-project-id', newTitle, newCategory, newContent, newImportance);
+      setShowAddModal(false);
+      setNewTitle('');
+      setNewContent('');
+      fetchMemories();
+    } catch (err: any) {
+      alert(`Failed to save memory: ${err.message}`);
+    }
+  };
+
+  const handleDeleteMemory = async (id: string) => {
+    try {
+      await himeApi.deleteMemory(id);
+      setMemories((prev) => prev.filter((m) => m.id !== id));
+      if (selectedNode?.id === id) {
+        setSelectedNode(null);
+      }
+    } catch {
+      setMemories((prev) => prev.filter((m) => m.id !== id));
+    }
+  };
 
   const filteredMemories = memories.filter((m) => {
     const matchCat = selectedCategory === 'All' || m.category === selectedCategory;
     const matchImp = m.importance >= minImportance;
-    const matchSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        m.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchCat && matchImp && matchSearch;
+    return matchCat && matchImp;
   });
-
-  const handleCreateMemory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    const newNode: MemoryNode = {
-      id: `mem-${Date.now()}`,
-      title: newTitle,
-      category: newCategory,
-      content: newContent,
-      importance: newImportance,
-      createdAt: new Date().toISOString(),
-      lastAccessed: new Date().toISOString(),
-      connections: [],
-      tags: newTags.split(',').map(t => t.trim()).filter(Boolean),
-      pinned: true
-    };
-
-    onAddMemory(newNode);
-    setSelectedNode(newNode);
-    setShowAddModal(false);
-    setNewTitle('');
-    setNewContent('');
-  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -88,14 +143,22 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 Neural Memory Store
                 <span className="text-xs px-3 py-0.5 rounded-full glass border border-purple-400/40 text-purple-300 font-bold font-mono">
-                  {memories.length} Active Nodes
+                  {memories.length} Active Vector Nodes
                 </span>
               </h2>
-              <p className="text-xs text-white/50 font-mono">Long-term context persistence for Gemini AI models</p>
+              <p className="text-xs text-white/50 font-mono">Long-term context persistence for Gemini AI models & RAG Memory Pipeline</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={fetchMemories}
+              className="p-2.5 rounded-full glass border border-white/20 text-cyan-400 hover:bg-white/10"
+              title="Refresh Memory Graph"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+
             <div className="flex glass p-1 rounded-full border border-white/10 text-xs font-mono">
               <button
                 onClick={() => setViewMode('graph')}
@@ -123,19 +186,17 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
 
         {/* Filter Pills & Search */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-white/10 text-xs">
-          {/* Search bar */}
           <div className="flex items-center gap-2.5 px-4 py-2.5 glass border border-white/10 rounded-2xl">
             <Search className="w-4 h-4 text-cyan-400" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search memory graph or tags..."
-              className="w-full bg-transparent outline-none text-white placeholder-white/40"
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Semantic vector search..."
+              className="w-full bg-transparent outline-none text-white placeholder-white/40 font-mono"
             />
           </div>
 
-          {/* Category Dropdown */}
           <div className="flex items-center gap-2">
             <Tag className="w-4 h-4 text-purple-400" />
             <select
@@ -149,7 +210,6 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
             </select>
           </div>
 
-          {/* Importance Slider */}
           <div className="flex items-center gap-3 px-4 py-2 glass border border-white/10 rounded-2xl font-mono">
             <span className="text-white/60 text-[11px] whitespace-nowrap uppercase font-bold">Imp &gt;= {minImportance}%</span>
             <input
@@ -166,11 +226,9 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
 
       {/* Main Graph & Inspector Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Interactive Memory Graph Canvas / List */}
         <GlassCard className="lg:col-span-2 p-6 min-h-[480px] flex flex-col justify-between relative overflow-hidden">
           {viewMode === 'graph' ? (
             <div className="relative w-full h-[450px] bg-black/60 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center p-4">
-              {/* SVG Link lines between nodes */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 {filteredMemories.map((m, idx) => {
                   if (idx === filteredMemories.length - 1) return null;
@@ -193,42 +251,44 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
                 })}
               </svg>
 
-              {/* Node Bubbles Floating */}
               <div className="relative w-full h-full flex flex-wrap items-center justify-center gap-6 p-6">
-                {filteredMemories.map((m) => {
-                  const isSelected = selectedNode?.id === m.id;
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => setSelectedNode(m)}
-                      className={`
-                        p-4 rounded-2xl border transition-all duration-300 text-left max-w-[220px] shadow-xl group relative
-                        ${isSelected 
-                          ? 'bg-gradient-to-tr from-purple-900/60 via-cyan-900/40 to-black border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-105' 
-                          : 'bg-[#0D1219]/90 border-white/10 hover:border-purple-500/50 hover:scale-102'}
-                      `}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                          {m.category}
-                        </span>
-                        {m.pinned && <Pin className="w-3 h-3 text-cyan-400 fill-cyan-400" />}
-                      </div>
+                {filteredMemories.length === 0 ? (
+                  <div className="text-center font-mono text-xs text-white/40">No memories stored in backend vector index</div>
+                ) : (
+                  filteredMemories.map((m) => {
+                    const isSelected = selectedNode?.id === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => setSelectedNode(m)}
+                        className={`
+                          p-4 rounded-2xl border transition-all duration-300 text-left max-w-[220px] shadow-xl group relative
+                          ${isSelected 
+                            ? 'bg-gradient-to-tr from-purple-900/60 via-cyan-900/40 to-black border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-105' 
+                            : 'bg-[#0D1219]/90 border-white/10 hover:border-purple-500/50 hover:scale-102'}
+                        `}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            {m.category}
+                          </span>
+                          {m.pinned && <Pin className="w-3 h-3 text-cyan-400 fill-cyan-400" />}
+                        </div>
 
-                      <h4 className="text-xs font-semibold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">{m.title}</h4>
-                      <p className="text-[11px] text-gray-400 line-clamp-2 mt-1">{m.content}</p>
+                        <h4 className="text-xs font-semibold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">{m.title}</h4>
+                        <p className="text-[11px] text-gray-400 line-clamp-2 mt-1">{m.content}</p>
 
-                      <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-gray-500">
-                        <span>Imp: {m.importance}%</span>
-                        <span className="text-cyan-400 font-bold">{m.tags.length} Tags</span>
-                      </div>
-                    </button>
-                  );
-                })}
+                        <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-gray-500">
+                          <span>Imp: {m.importance}%</span>
+                          <span className="text-cyan-400 font-bold">{m.tags.length} Tags</span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
           ) : (
-            /* Timeline List View */
             <div className="space-y-3">
               {filteredMemories.map((m) => (
                 <div
@@ -260,22 +320,13 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                   {selectedNode.category}
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onTogglePin(selectedNode.id)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white"
-                    title="Toggle Pin"
-                  >
-                    <Pin className={`w-4 h-4 ${selectedNode.pinned ? 'text-cyan-400 fill-cyan-400' : ''}`} />
-                  </button>
-                  <button
-                    onClick={() => { onDeleteMemory(selectedNode.id); setSelectedNode(null); }}
-                    className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
-                    title="Delete Memory"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDeleteMemory(selectedNode.id)}
+                  className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
+                  title="Delete Memory"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -293,21 +344,10 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
                 <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-purple-400 to-cyan-400" style={{ width: `${selectedNode.importance}%` }} />
                 </div>
-
-                <div className="pt-2">
-                  <span className="text-[10px] text-gray-500 block mb-1">ASSOCIATED TAGS</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedNode.tags.map((tag, idx) => (
-                      <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-gray-300 border border-white/10">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           ) : (
-            <div className="py-20 text-center text-xs text-gray-500">
+            <div className="py-20 text-center text-xs text-gray-500 font-mono">
               Select a node in the graph to inspect memory context.
             </div>
           )}
@@ -344,36 +384,23 @@ export const AIMemoryPage: React.FC<AIMemoryPageProps> = ({
                 <label className="block text-gray-400 font-mono mb-1">Category</label>
                 <select
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as any)}
+                  onChange={(e) => setNewCategory(e.target.value)}
                   className="w-full p-2.5 rounded-xl bg-black/50 border border-white/15 text-white outline-none font-mono"
                 >
-                  <option value="User Preference">User Preference</option>
-                  <option value="Project Context">Project Context</option>
-                  <option value="Fact">Fact</option>
-                  <option value="Code Snippet">Code Snippet</option>
-                  <option value="System Rule">System Rule</option>
-                  <option value="Interaction">Interaction</option>
+                  {categories.filter(c => c !== 'All').map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-gray-400 font-mono mb-1">Memory Context Content</label>
+                <label className="block text-gray-400 font-mono mb-1">Memory Content</label>
                 <textarea
                   rows={3}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder="Detailed context for Gemini model reference..."
                   className="w-full p-2.5 rounded-xl bg-black/50 border border-white/15 text-white outline-none focus:border-purple-500/50 resize-none font-sans"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-400 font-mono mb-1">Tags (comma separated)</label>
-                <input
-                  type="text"
-                  value={newTags}
-                  onChange={(e) => setNewTags(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-black/50 border border-white/15 text-white outline-none"
                 />
               </div>
 

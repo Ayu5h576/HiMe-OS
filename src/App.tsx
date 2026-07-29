@@ -15,12 +15,13 @@ import { AnalyticsPage } from './components/pages/AnalyticsPage';
 import { FileExplorerPage } from './components/pages/FileExplorerPage';
 import { CalendarTasksPage } from './components/pages/CalendarTasksPage';
 import { SettingsPage } from './components/pages/SettingsPage';
+import { VisionPage } from './components/pages/VisionPage';
+import { BrowserPage } from './components/pages/BrowserPage';
+import { ActivityFeedPage } from './components/pages/ActivityFeedPage';
 
 import type { 
   OSPage, 
   SystemMetrics, 
-  MemoryNode, 
-  AutomationWorkflow, 
   DeviceItem, 
   GithubRepo, 
   FileItem, 
@@ -31,8 +32,6 @@ import type {
 
 import { 
   initialMetrics, 
-  initialMemories, 
-  initialAutomations, 
   initialDevices, 
   initialGithubRepos, 
   initialFiles, 
@@ -44,8 +43,6 @@ import {
 export default function App() {
   const [currentPage, setCurrentPage] = useState<OSPage>('dashboard');
   const [metrics, setMetrics] = useState<SystemMetrics>(initialMetrics);
-  const [memories, setMemories] = useState<MemoryNode[]>(initialMemories);
-  const [automations, setAutomations] = useState<AutomationWorkflow[]>(initialAutomations);
   const [devices] = useState<DeviceItem[]>(initialDevices);
   const [repos] = useState<GithubRepo[]>(initialGithubRepos);
   const [files] = useState<FileItem[]>(initialFiles);
@@ -82,32 +79,6 @@ export default function App() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  // Handlers for Memory
-  const handleAddMemory = (newNode: MemoryNode) => {
-    setMemories((prev) => [newNode, ...prev]);
-  };
-
-  const handleDeleteMemory = (id: string) => {
-    setMemories((prev) => prev.filter(m => m.id !== id));
-  };
-
-  const handleTogglePinMemory = (id: string) => {
-    setMemories((prev) => prev.map(m => m.id === id ? { ...m, pinned: !m.pinned } : m));
-  };
-
-  // Handlers for Automations
-  const handleToggleAutomation = (id: string) => {
-    setAutomations((prev) => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
-  };
-
-  const handleAddAutomation = (newAuto: AutomationWorkflow) => {
-    setAutomations((prev) => [newAuto, ...prev]);
-  };
-
-  const handleDeleteAutomation = (id: string) => {
-    setAutomations((prev) => prev.filter(a => a.id !== id));
-  };
 
   // Handlers for Tasks
   const handleToggleTask = (id: string) => {
@@ -164,10 +135,6 @@ export default function App() {
           <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 max-w-[1440px] 2xl:max-w-[1536px] mx-auto w-full overflow-y-auto">
             {currentPage === 'dashboard' && (
               <DashboardPage
-                metrics={metrics}
-                devices={devices}
-                automations={automations}
-                memories={memories}
                 onNavigate={(p) => setCurrentPage(p)}
                 onOpenCommandPalette={() => setCommandPaletteOpen(true)}
               />
@@ -177,22 +144,24 @@ export default function App() {
               <AIAssistantPage />
             )}
 
+            {currentPage === 'vision' && (
+              <VisionPage />
+            )}
+
+            {currentPage === 'browser' && (
+              <BrowserPage />
+            )}
+
+            {currentPage === 'activity' && (
+              <ActivityFeedPage />
+            )}
+
             {currentPage === 'ai-memory' && (
-              <AIMemoryPage
-                memories={memories}
-                onAddMemory={handleAddMemory}
-                onDeleteMemory={handleDeleteMemory}
-                onTogglePin={handleTogglePinMemory}
-              />
+              <AIMemoryPage />
             )}
 
             {currentPage === 'automation' && (
-              <AutomationPage
-                automations={automations}
-                onToggleAutomation={handleToggleAutomation}
-                onAddAutomation={handleAddAutomation}
-                onDeleteAutomation={handleDeleteAutomation}
-              />
+              <AutomationPage />
             )}
 
             {currentPage === 'device-control' && (

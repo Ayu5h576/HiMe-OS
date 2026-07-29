@@ -37,11 +37,12 @@
 25. [Phase 22 — Computer Vision Platform](#phase-22--computer-vision-platform)
 26. [Phase 23 — Browser Automation Platform](#phase-23--browser-automation-platform)
 27. [Phase 24 — Native Desktop Runtime Agent](#phase-24--native-desktop-runtime-agent)
-28. [Database Schema](#database-schema)
-29. [API Endpoints Summary](#api-endpoints-summary)
-30. [Test Coverage](#test-coverage)
-31. [File Structure](#file-structure)
-32. [What's Next](#whats-next)
+28. [Phase 25 — Home Application Integration Platform](#phase-25--home-application-integration-platform)
+29. [Database Schema](#database-schema)
+30. [API Endpoints Summary](#api-endpoints-summary)
+31. [Test Coverage](#test-coverage)
+32. [File Structure](#file-structure)
+33. [What's Next](#whats-next)
 
 ---
 
@@ -437,6 +438,27 @@ Routes
 | `POST` | `/runtime-agent/system/action` | Execute native system command (lock, sleep, volume, brightness, shutdown) |
 | `GET` | `/runtime-agent/battery` | Get detailed battery metrics and charging state |
 | `GET` | `/runtime-agent/events` | Retrieve real-time agent event stream logs |
+
+---
+
+## Phase 25 — Home Application Integration Platform
+
+**Status**: ✅ Complete | **Commit**: TBD  
+*Integrate all 24 backend modules into a unified, single-screen Personal AI Operating System dashboard & workspace*
+
+### What Was Built
+
+| Component | File(s) |
+| :--- | :--- |
+| API Client Layer | `src/services/api/himeApi.ts` — Unified API wrapper connecting React frontend to 102 backend endpoints |
+| Home OS Dashboard | `src/components/pages/DashboardPage.tsx` — Real-time telemetry (Battery, CPU, RAM, Storage, OS, Active processes, Native Agent health, Quick System Controls) |
+| AI Assistant Workspace | `src/components/pages/AIAssistantPage.tsx` — AI Chat, tool calling execution, multi-agent orchestration planning/execution |
+| Computer Vision Workspace | `src/components/pages/VisionPage.tsx` — OCR, object detection, scene description, screenshot perception |
+| Browser Automation Workspace | `src/components/pages/BrowserPage.tsx` — Session management, web navigation, DOM extraction, element clicking/typing, viewport capture |
+| AI Memory Graph Workspace | `src/components/pages/AIMemoryPage.tsx` — Memory node management, 2D graph view, timeline view, semantic vector search |
+| Workflow Automations | `src/components/pages/AutomationPage.tsx` — Active automations list, manual triggers, natural language AI builder |
+| Connected Devices & Processes | `src/components/pages/DeviceControlPage.tsx` — Process listing, app launch/close, device mesh telemetry |
+| Activity Audit Log | `src/components/pages/ActivityFeedPage.tsx` — Unified timeline across Voice, Browser, Desktop, Automation, Memory & AI Engine |
 
 
 ```prisma

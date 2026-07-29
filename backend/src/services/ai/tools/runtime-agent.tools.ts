@@ -384,8 +384,8 @@ export class SetVolumeTool implements ITool {
 // 11. SetBrightnessTool
 // ─────────────────────────────────────────────────────────────────────────────
 
-export class SetBrightnessTool implements ITool {
-  readonly name = 'setBrightness';
+export class SetDesktopBrightnessTool implements ITool {
+  readonly name = 'setDesktopBrightness';
   readonly description = 'Adjust display brightness percentage (0-100).';
   readonly parameterSchema = z.object({
     value: z.number().min(0).max(100),

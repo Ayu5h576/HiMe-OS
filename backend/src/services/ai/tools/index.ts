@@ -59,7 +59,7 @@ import {
   ShutdownComputerTool,
   RestartComputerTool,
   SetVolumeTool,
-  SetBrightnessTool,
+  SetDesktopBrightnessTool,
   WatchFolderTool,
 } from './runtime-agent.tools';
 
@@ -154,7 +154,7 @@ export function initializeSystemTools(
   registry.registerTool(new ShutdownComputerTool());
   registry.registerTool(new RestartComputerTool());
   registry.registerTool(new SetVolumeTool());
-  registry.registerTool(new SetBrightnessTool());
+  registry.registerTool(new SetDesktopBrightnessTool());
   registry.registerTool(new WatchFolderTool());
 
   return registry;
