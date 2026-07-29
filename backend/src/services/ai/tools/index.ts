@@ -39,6 +39,15 @@ import {
   ScanQRCodeTool,
   AnalyzeScreenshotTool,
 } from './vision.tools';
+import {
+  OpenWebsiteTool,
+  ClickElementTool,
+  FillFormTool,
+  ExtractDOMTool,
+  TakeBrowserScreenshotTool,
+  DownloadFileTool,
+  UploadFileTool,
+} from './browser.tools';
 
 export * from './tool.interface';
 export * from './tool-response';
@@ -54,6 +63,7 @@ export * from './device.tools';
 export * from './desktop.tools';
 export * from './voice.tools';
 export * from './vision.tools';
+export * from './browser.tools';
 
 export function initializeSystemTools(
   registry: ToolRegistry = ToolRegistry.getInstance(),
@@ -108,6 +118,15 @@ export function initializeSystemTools(
   registry.registerTool(new DetectObjectsTool());
   registry.registerTool(new ScanQRCodeTool());
   registry.registerTool(new AnalyzeScreenshotTool());
+
+  // Browser Automation Tools
+  registry.registerTool(new OpenWebsiteTool());
+  registry.registerTool(new ClickElementTool());
+  registry.registerTool(new FillFormTool());
+  registry.registerTool(new ExtractDOMTool());
+  registry.registerTool(new TakeBrowserScreenshotTool());
+  registry.registerTool(new DownloadFileTool());
+  registry.registerTool(new UploadFileTool());
 
   return registry;
 }
