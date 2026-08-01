@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -13,12 +13,15 @@ import {
   Search,
   ChevronRight,
   Wifi,
-  MoreVertical
+  MoreVertical,
+  Plus,
+  Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import GlassCard from "@/components/glass-card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { himeApi } from "@/services/api/himeApi"
 
 export interface IoTDevice {
   id: string
@@ -32,7 +35,7 @@ export interface IoTDevice {
   icon: React.ComponentType<any>
 }
 
-export const initialDevices: IoTDevice[] = [
+const initialDevices: IoTDevice[] = [
   { id: "living-hvac", name: "Living Room Thermostat", room: "Living Room", type: "climate", status: "online", stateSummary: "Heating", value: "72°F", icon: Thermometer },
   { id: "front-lock", name: "Front Entrance Lock", room: "Foyer", type: "security", status: "online", stateSummary: "Locked & Armed", battery: 84, icon: Lock },
   { id: "hall-lights", name: "Main Hallway Lights", room: "Hallway", type: "lighting", status: "online", stateSummary: "On", value: "60% Dim", icon: Lightbulb },
@@ -56,35 +59,147 @@ const filterTabs = [
 export default function DevicesPage() {
   const [filter, setFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [devices, setDevices] = useState<IoTDevice[]>(initialDevices)
+  const [isLoading, setIsLoading] = useState(false)
+  const [newDeviceName, setNewDeviceName] = useState("")
+  const [showAddForm, setShowAddForm] = useState(false)
 
-  const filteredDevices = initialDevices.filter((dev) => {
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case "climate": return Thermometer
+      case "security": return Lock
+      case "lighting": return Lightbulb
+      case "entertainment": return Tv
+      case "power": return Power
+      default: return Wifi
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true
+    const loadDevices = async () => {
+      setIsLoading(true)
+      try {
+        await himeApi.ensureAuthenticated()
+        const backendDevices = await himeApi.getProjectDevices().catch(() => [])
+        if (mounted && Array.isArray(backendDevices) && backendDevices.length > 0) {
+          const mapped: IoTDevice[] = backendDevices.map((d) => ({
+            id: d.id,
+            name: d.name,
+            room: (d.metadata?.room as string) || "Main Workspace",
+            type: (d.type?.toLowerCase() as any) || "security",
+            status: d.connectionState === "CONNECTED" ? "online" : "offline",
+            stateSummary: d.status || "Active",
+            value: (d.metadata?.value as string) || undefined,
+            battery: d.batteryLevel || undefined,
+            icon: getIconForType(d.type?.toLowerCase() || "")
+          }))
+          setDevices(mapped)
+        }
+      } catch (err) {
+        console.warn("[DevicesPage] Load error:", err)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    loadDevices()
+    return () => { mounted = false }
+  }, [])
+
+  const handleCreateDevice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newDeviceName.trim()) return
+    try {
+      await himeApi.ensureAuthenticated()
+      const created = await himeApi.createDevice(undefined, newDeviceName, "SECURITY", "HiMe Hardware", "v1.0").catch(() => null)
+      if (created) {
+        setDevices((prev) => [
+          {
+            id: created.id,
+            name: created.name,
+            room: "Main Workspace",
+            type: "security",
+            status: "online",
+            stateSummary: "CONNECTED",
+            icon: Lock
+          },
+          ...prev
+        ])
+        setNewDeviceName("")
+        setShowAddForm(false)
+      }
+    } catch (err) {
+      console.warn("[DevicesPage] Create device error:", err)
+    }
+  }
+
+  const toggleConnection = async (dev: IoTDevice) => {
+    const isOnline = dev.status === "online"
+    try {
+      if (isOnline) {
+        await himeApi.disconnectDevice(dev.id).catch(() => null)
+      } else {
+        await himeApi.connectDevice(dev.id).catch(() => null)
+      }
+      setDevices((prev) =>
+        prev.map((d) => (d.id === dev.id ? { ...d, status: isOnline ? "offline" : "online" } : d))
+      )
+    } catch (err) {
+      console.warn("[DevicesPage] Toggle connection error:", err)
+    }
+  }
+
+  const filteredDevices = devices.filter((dev) => {
     const matchesFilter = filter === "all" || dev.type === filter
     const matchesSearch = dev.name.toLowerCase().includes(searchQuery.toLowerCase()) || dev.room.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
   return (
-    <div className="space-y-6 select-none">
-      {/* Header and Search controls */}
+    <div className="space-y-6 select-none text-left">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">IoT Connected Nodes</h1>
           <p className="text-sm text-zinc-400 mt-1">Manage system configurations and parameters for smart devices.</p>
         </div>
 
-        {/* Search everything */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search device name or room..."
-            className="w-full h-9 pl-9 bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-800 rounded-lg text-sm"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search device or room..."
+              className="w-full h-9 pl-9 bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-800 rounded-lg text-sm"
+            />
+          </div>
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="h-9 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Node
+          </Button>
         </div>
       </div>
 
-      {/* Tabs Filter Bar */}
+      {showAddForm && (
+        <GlassCard className="p-4 border border-zinc-800/60 bg-zinc-900/50 space-y-3">
+          <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider font-mono">Register New Virtual IoT Node</h3>
+          <form onSubmit={handleCreateDevice} className="flex gap-2">
+            <Input
+              value={newDeviceName}
+              onChange={(e) => setNewDeviceName(e.target.value)}
+              placeholder="Device name (e.g. Master Bedroom Smart Blind)"
+              className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs text-zinc-200"
+            />
+            <Button type="submit" className="h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg">
+              Save Node
+            </Button>
+          </form>
+        </GlassCard>
+      )}
+
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-zinc-850">
         {filterTabs.map((tab) => (
           <button
@@ -101,11 +216,14 @@ export default function DevicesPage() {
         ))}
       </div>
 
-      {/* Devices Grid List */}
-      <motion.div
-        layout
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
+      {isLoading && (
+        <div className="flex items-center justify-center p-8 text-zinc-500 gap-2 text-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+          <span>Synchronizing IoT devices with backend database...</span>
+        </div>
+      )}
+
+      <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
           {filteredDevices.map((device) => {
             const Icon = device.icon
@@ -123,7 +241,6 @@ export default function DevicesPage() {
                 <GlassCard className={`flex flex-col justify-between h-44 border p-5 relative overflow-hidden transition-all duration-300 ${
                   isOffline ? "border-red-950/20 bg-red-950/5 opacity-60" : "border-zinc-800/40 hover:border-zinc-800"
                 }`}>
-                  {/* Card Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/50 shrink-0 text-zinc-400 ${
@@ -141,7 +258,6 @@ export default function DevicesPage() {
                       </div>
                     </div>
 
-                    {/* Dropdown Menu actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
@@ -152,26 +268,20 @@ export default function DevicesPage() {
                       />
                       <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-300 w-40 mt-1">
                         <DropdownMenuItem
-                          render={<Link to={`/devices/${device.id}`}>Device Details</Link>}
-                          className="focus:bg-zinc-800 focus:text-zinc-100 text-xs"
-                        />
-                        {!isOffline && (
-                          <DropdownMenuItem
-                            render={<Link to={`/devices/${device.id}/control`}>Device Control</Link>}
-                            className="focus:bg-zinc-800 focus:text-zinc-100 text-xs"
-                          />
-                        )}
+                          onClick={() => toggleConnection(device)}
+                          className="focus:bg-zinc-800 focus:text-zinc-100 text-xs cursor-pointer"
+                        >
+                          {isOffline ? "Connect Node" : "Disconnect Node"}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
 
-                  {/* Node telemetries */}
                   <div className="flex items-baseline justify-between my-2">
                     <span className="text-2xl font-bold tracking-tight text-white font-mono">
                       {device.value !== undefined ? device.value : device.stateSummary}
                     </span>
                     
-                    {/* Battery status */}
                     {device.battery !== undefined && (
                       <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-semibold">
                         <Battery className="w-3.5 h-3.5 text-zinc-400" />
@@ -180,14 +290,16 @@ export default function DevicesPage() {
                     )}
                   </div>
 
-                  {/* Actions bottom link row */}
                   <div className="flex items-center justify-between pt-3 border-t border-zinc-800/20 text-xs font-semibold">
-                    <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => toggleConnection(device)}
+                      className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer"
+                    >
                       <Wifi className={`w-3.5 h-3.5 ${isOffline ? 'text-rose-500' : 'text-emerald-400'}`} />
                       <span className={isOffline ? 'text-rose-500' : 'text-zinc-400'}>
                         {isOffline ? 'Offline' : 'Sync Active'}
                       </span>
-                    </div>
+                    </button>
 
                     <div className="flex items-center gap-2">
                       <Link

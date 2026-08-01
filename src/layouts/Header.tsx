@@ -12,26 +12,69 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { himeApi } from "@/services/api/himeApi"
 
 interface HeaderProps {
   onMenuToggle: () => void
 }
 
+interface NotificationItem {
+  id: string
+  title: string
+  message: string
+  read: boolean
+}
+
 export default function Header({ onMenuToggle }: HeaderProps) {
-  const { isAICoreOnline, connectedNodesCount } = useOS()
+  const { isAICoreOnline, connectedNodesCount, setIsAICoreOnline, setConnectedNodesCount } = useOS()
   const [time, setTime] = useState(new Date())
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    { id: "n-1", title: "IoT Automation Triggered", message: "Living room heater adjusted by AI Core", read: false },
+    { id: "n-2", title: "Vision Inference Completed", message: "Known profile 'Ayush' detected at main gate", read: false }
+  ])
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    let mounted = true
+    const fetchHeaderData = async () => {
+      try {
+        await himeApi.ensureAuthenticated()
+        const notifs = await himeApi.getNotifications().catch(() => [])
+        const status = await himeApi.getRuntimeStatus().catch(() => null)
+
+        if (mounted) {
+          if (Array.isArray(notifs) && notifs.length > 0) {
+            setNotifications(
+              notifs.map((n) => ({
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                read: n.read
+              }))
+            )
+          }
+          if (status) {
+            setIsAICoreOnline(status.isOnline !== false)
+          }
+        }
+      } catch (err) {
+        console.warn("[Header] Sync error:", err)
+      }
+    }
+    fetchHeaderData()
+    return () => { mounted = false }
+  }, [setIsAICoreOnline, setConnectedNodesCount])
+
   const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   const formattedDate = time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  const unreadCount = notifications.filter((n) => !n.read).length
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-6 bg-zinc-950/40 backdrop-blur-xl border-b border-zinc-800/40 select-none">
-      {/* Left Menu Toggle */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -42,7 +85,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           <Menu className="w-5 h-5" />
         </Button>
         
-        {/* Brand Indicator / Title */}
         <div className="hidden md:flex items-center gap-2">
           <span className="font-semibold text-base tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
             HiMe OS
@@ -51,7 +93,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </div>
       </div>
 
-      {/* Center Spotlight Search Bar */}
       <div className="flex-1 max-w-md mx-4 md:mx-8">
         <div className="relative group">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500 group-focus-within:text-zinc-300 transition-colors" />
@@ -66,9 +107,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right Actions & Utilities */}
       <div className="flex items-center gap-2 md:gap-4">
-        {/* Status Indicators */}
         <div className="hidden lg:flex items-center gap-4 text-xs text-zinc-500 mr-2 border-r border-zinc-800/60 pr-4">
           <div className="flex items-center gap-1.5">
             <Wifi className={`w-3.5 h-3.5 ${isAICoreOnline ? 'text-emerald-400 animate-pulse' : 'text-red-400'}`} />
@@ -82,13 +121,11 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           </div>
         </div>
 
-        {/* Date and Ticking Clock */}
         <div className="hidden sm:flex flex-col items-end text-right mr-1">
           <span className="text-xs text-zinc-300 font-semibold font-mono tracking-wide">{formattedTime}</span>
           <span className="text-[10px] text-zinc-500 font-medium">{formattedDate}</span>
         </div>
 
-        {/* Notifications Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -98,27 +135,26 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 className="relative h-9 w-9 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 rounded-lg"
               >
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-indigo-500" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                )}
               </Button>
             }
           />
           <DropdownMenuContent align="end" className="w-80 bg-zinc-900 border-zinc-800 text-zinc-200 mt-1">
-            <DropdownMenuLabel>System Notifications</DropdownMenuLabel>
+            <DropdownMenuLabel>System Notifications ({notifications.length})</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-zinc-800" />
-            <div className="py-1">
-              <div className="px-4 py-2 hover:bg-zinc-800/40 transition-colors cursor-pointer">
-                <p className="text-xs font-semibold text-zinc-300">IoT Automation Triggered</p>
-                <p className="text-[10px] text-zinc-500 mt-0.5">Living room heater adjusted by AI Core</p>
-              </div>
-              <div className="px-4 py-2 hover:bg-zinc-800/40 transition-colors cursor-pointer">
-                <p className="text-xs font-semibold text-zinc-300">Vision Inference Completed</p>
-                <p className="text-[10px] text-zinc-500 mt-0.5">Known profile 'Ayush' detected at main gate</p>
-              </div>
+            <div className="py-1 max-h-60 overflow-y-auto">
+              {notifications.map((n) => (
+                <div key={n.id} className="px-4 py-2 hover:bg-zinc-800/40 transition-colors cursor-pointer border-b border-zinc-800/20 last:border-0">
+                  <p className="text-xs font-semibold text-zinc-300">{n.title}</p>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">{n.message}</p>
+                </div>
+              ))}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -143,10 +179,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuItem className="focus:bg-zinc-800 focus:text-zinc-100">
               System Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-zinc-800" />
-            <DropdownMenuItem className="text-red-400 focus:bg-red-950/20 focus:text-red-400">
-              Lock Frame
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

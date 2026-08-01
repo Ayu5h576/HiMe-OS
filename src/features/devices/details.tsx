@@ -9,11 +9,17 @@ import {
   Battery
 } from "lucide-react"
 import GlassCard from "@/components/glass-card"
-import { initialDevices } from "./index"
+import { type IoTDevice } from "./index"
+
+const fallbackDevices: IoTDevice[] = [
+  { id: "living-hvac", name: "Living Room Thermostat", room: "Living Room", type: "climate", status: "online", stateSummary: "Heating", value: "72°F", icon: Sliders },
+  { id: "front-lock", name: "Front Entrance Lock", room: "Foyer", type: "security", status: "online", stateSummary: "Locked & Armed", battery: 84, icon: Sliders },
+  { id: "hall-lights", name: "Main Hallway Lights", room: "Hallway", type: "lighting", status: "online", stateSummary: "On", value: "60% Dim", icon: Sliders },
+]
 
 export default function DeviceDetailsPage() {
   const { deviceId } = useParams<{ deviceId: string }>()
-  const device = initialDevices.find((d) => d.id === deviceId)
+  const device = fallbackDevices.find((d: IoTDevice) => d.id === deviceId) || fallbackDevices[0]
 
   // Redirect to list if device ID is invalid
   if (!device) {

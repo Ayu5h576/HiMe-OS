@@ -19,7 +19,7 @@ export class ActivityFeedService {
     RuntimeEventBusService.subscribeAll(async (event: RuntimeEvent) => {
       try {
         let category = 'SYSTEM';
-        let action = event.type;
+        let action: string = event.type;
         let description = `Event ${event.type} triggered`;
 
         if (event.type === 'DeviceChanged') {

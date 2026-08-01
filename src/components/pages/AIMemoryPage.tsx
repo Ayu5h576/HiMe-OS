@@ -404,6 +404,29 @@ export const AIMemoryPage: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-gray-400 font-mono mb-1">Importance ({newImportance}%)</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={newImportance}
+                  onChange={(e) => setNewImportance(Number(e.target.value))}
+                  className="w-full accent-purple-500 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-400 font-mono mb-1">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  placeholder="Gemini, Memory, HiMeOS"
+                  className="w-full p-2.5 rounded-xl bg-black/50 border border-white/15 text-white outline-none focus:border-purple-500/50 font-mono"
+                />
+              </div>
+
               <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"

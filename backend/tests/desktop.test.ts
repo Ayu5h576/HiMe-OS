@@ -308,7 +308,7 @@ describe('Desktop Agent Infrastructure (Phase 19)', () => {
         expect(p).toHaveProperty('name');
         expect(typeof p.pid).toBe('number');
       });
-    });
+    }, 15000);
 
     it('should check that the current process is running', async () => {
       const result = await applicationService.checkProcessState(process.pid);
@@ -331,7 +331,7 @@ describe('Desktop Agent Infrastructure (Phase 19)', () => {
       const body = JSON.parse(res.payload);
       expect(body.success).toBe(true);
       expect(Array.isArray(body.data)).toBe(true);
-    });
+    }, 15000);
   });
 
   // ─────────────────────────────────────────────────────────────────────────

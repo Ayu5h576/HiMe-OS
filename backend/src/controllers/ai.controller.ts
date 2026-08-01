@@ -3,6 +3,7 @@ import { AIService } from '../services/ai/ai.service';
 import { ConversationService } from '../services/conversation.service';
 import { aiChatSchema } from '../schemas/ai.schema';
 import { MessageRole } from '@prisma/client';
+import { BadRequestError } from '../utils/errors';
 
 export class AIController {
   private aiService: AIService;
@@ -17,48 +18,78 @@ export class AIController {
   }
 
   chat = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { conversationId, message, provider, model } = aiChatSchema.parse(req.body);
+    const { conversationId, message, prompt, provider, model } = aiChatSchema.parse(req.body);
     const userId = req.user.id;
 
-    // 1. Verify conversation existence & project ownership
-    await this.conversationService.getConversationById(userId, conversationId);
+    if (conversationId !== undefined && conversationId.trim() === '') {
+      throw new BadRequestError('conversationId cannot be empty string');
+    }
+    const userPrompt = (prompt || message || '').trim();
+    if (!userPrompt && (prompt !== undefined || message !== undefined)) {
+      throw new BadRequestError('message or prompt cannot be empty string');
+    }
+    const finalPrompt = userPrompt || 'Hello';
 
-    // 2. Persist user message in conversation
-    await this.conversationService.createMessage(userId, conversationId, {
-      role: MessageRole.USER,
-      content: message,
-    });
+    if (conversationId) {
+      // 1. Verify conversation existence & project ownership
+      await this.conversationService.getConversationById(userId, conversationId);
 
-    // 3. Build normalized context via ContextBuilder
-    const normalizedPrompt = await this.aiService.buildNormalizedPrompt({
-      userId,
-      conversationId,
-      currentUserMessage: message,
-    });
+      // 2. Persist user message in conversation
+      await this.conversationService.createMessage(userId, conversationId, {
+        role: MessageRole.USER,
+        content: finalPrompt,
+      });
 
-    // 4. Invoke AI Service with normalized prompt package
-    const aiResponse = await this.aiService.generateChatResponse({
-      prompt: message,
-      normalizedPrompt,
-      provider,
-      model,
-    });
+      // 3. Build normalized context via ContextBuilder
+      const normalizedPrompt = await this.aiService.buildNormalizedPrompt({
+        userId,
+        conversationId,
+        currentUserMessage: finalPrompt,
+      });
 
-    // 5. Persist assistant response in conversation
-    await this.conversationService.createMessage(userId, conversationId, {
-      role: MessageRole.ASSISTANT,
-      content: aiResponse.message,
-      metadata: {
-        provider: aiResponse.provider,
-        model: aiResponse.model,
-        usage: aiResponse.usage,
-      },
-    });
+      // 4. Invoke AI Service with normalized prompt package
+      const aiResponse = await this.aiService.generateChatResponse({
+        prompt: finalPrompt,
+        normalizedPrompt,
+        provider,
+        model,
+      });
 
-    // 6. Return normalized AI response
-    return reply.status(200).send({
-      success: true,
-      data: aiResponse,
-    });
+      // 5. Persist assistant response in conversation
+      await this.conversationService.createMessage(userId, conversationId, {
+        role: MessageRole.ASSISTANT,
+        content: aiResponse.message,
+        metadata: {
+          provider: aiResponse.provider,
+          model: aiResponse.model,
+          usage: aiResponse.usage,
+        },
+      });
+
+      return reply.status(200).send({
+        success: true,
+        data: {
+          ...aiResponse,
+          content: aiResponse.message,
+          tokensUsed: aiResponse.usage.totalTokens,
+        },
+      });
+    } else {
+      // Standalone chat without conversation persistence
+      const aiResponse = await this.aiService.generateChatResponse({
+        prompt: finalPrompt,
+        provider,
+        model,
+      });
+
+      return reply.status(200).send({
+        success: true,
+        data: {
+          ...aiResponse,
+          content: aiResponse.message,
+          tokensUsed: aiResponse.usage.totalTokens,
+        },
+      });
+    }
   };
 }

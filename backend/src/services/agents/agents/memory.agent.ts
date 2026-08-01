@@ -21,7 +21,7 @@ export class MemoryAgent implements IAgent {
 
     if (context.projectId) {
       try {
-        const memoryPage = await this.memoryService.getProjectMemories(userId, context.projectId, { limit: 5 });
+        const memoryPage = await this.memoryService.getProjectMemories(userId, context.projectId, { sortBy: 'createdAt', sortOrder: 'desc', page: 1, limit: 5 });
         retrievedMemories = memoryPage.data.map((m) => `[${m.type}] ${m.title}: ${m.content}`);
       } catch {
         retrievedMemories = [`[FACT] User prefers clean 4-tier architecture.`];

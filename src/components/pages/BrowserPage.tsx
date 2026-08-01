@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Globe, 
-  Search, 
   Play, 
   Code2, 
   Camera, 
-  ArrowRight, 
-  RotateCw,
   Layers,
-  MousePointer,
-  CheckCircle2
+  MousePointer
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
 import { himeApi } from '../../services/api/himeApi';

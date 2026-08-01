@@ -26,24 +26,9 @@ const initialLogs: MessageLog[] = [
 export default function DashboardPage() {
   const [logs, setLogs] = useState<MessageLog[]>(initialLogs)
 
-  const handleCommandSubmit = (command: string) => {
+  const handleCommandSubmit = (command: string, aiResponse?: string) => {
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    
-    // Custom simulated response based on command terms
-    let reply = "Parameter settings successfully updated."
-    const cmd = command.toLowerCase()
-    
-    if (cmd.includes("lock") || cmd.includes("secure")) {
-      reply = "Perimeter locks verified. Security grid armed."
-    } else if (cmd.includes("temp") || cmd.includes("thermostat") || cmd.includes("deg")) {
-      reply = "HVAC heat pump parameters adjusted to target temperatures."
-    } else if (cmd.includes("light") || cmd.includes("dim")) {
-      reply = "Smart lighting dimmers set. Connected zone settings optimized."
-    } else if (cmd.includes("camera") || cmd.includes("vision") || cmd.includes("feed")) {
-      reply = "Camera matrix feeds brought to foreground focus."
-    } else if (cmd.includes("coffee") || cmd.includes("brew")) {
-      reply = "Espresso machine brewing sequence started. Cup heating active."
-    }
+    const reply = aiResponse || "Parameter settings successfully updated."
 
     const newLog: MessageLog = {
       id: `log-${Date.now()}`,
@@ -55,7 +40,6 @@ export default function DashboardPage() {
     setLogs((prevLogs) => [newLog, ...prevLogs])
   }
 
-  // Animation layout parent options
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -76,32 +60,20 @@ export default function DashboardPage() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column Area - Spans 2 Cols on Desktop, falls back to 1 on Tablet/Mobile */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Welcome Hero & Command Input */}
           <WelcomeHero onCommandSubmit={handleCommandSubmit} />
           
-          {/* Sub-grid for Action controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-8">
             <QuickActions />
             <DeviceOverview />
           </div>
 
-          {/* Prompt Logs Log */}
           <RecentConversations logs={logs} />
         </div>
 
-        {/* Right Column Area - Spans 1 Col on Desktop, falls back to 1 on Mobile, splits in 2 on Tablet */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8 self-start">
-          
-          {/* System Telemetry Summary */}
           <SystemSummary />
-          
-          {/* AI recommendations */}
           <AIPredictor />
-          
-          {/* Calendar timeline agenda */}
           <div className="md:col-span-2 lg:col-span-1">
             <UpcomingAutomations />
           </div>

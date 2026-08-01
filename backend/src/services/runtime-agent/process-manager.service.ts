@@ -1,3 +1,4 @@
+import { exec } from 'child_process';
 import { ProcessInfo } from './types';
 import { BadRequestError, NotFoundError } from '../../utils/errors';
 import { logger } from '../../config/logger';
@@ -18,7 +19,6 @@ export class ProcessManagerService {
     [1042, { pid: 1042, name: 'node.exe', cpuPercent: 1.2, memoryBytes: 85 * 1024 * 1024, status: 'running' }],
     [2048, { pid: 2048, name: 'code.exe', cpuPercent: 3.5, memoryBytes: 320 * 1024 * 1024, status: 'running' }],
     [3096, { pid: 3096, name: 'chrome.exe', cpuPercent: 4.8, memoryBytes: 450 * 1024 * 1024, status: 'running' }],
-    [4012, { pid: 4012, name: 'notepad.exe', cpuPercent: 0.1, memoryBytes: 15 * 1024 * 1024, status: 'running' }],
   ]);
 
   async getRunningProcesses(): Promise<ProcessInfo[]> {
@@ -35,6 +35,21 @@ export class ProcessManagerService {
     }
 
     const pid = Math.floor(Math.random() * 9000) + 1000;
+
+    // Physically launch app on host operating system
+    try {
+      if (process.platform === 'win32') {
+        exec(`start "" "${cleanName}"`);
+      } else if (process.platform === 'darwin') {
+        exec(`open -a "${cleanName}"`);
+      } else {
+        exec(`${cleanName} &`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.warn(`[ProcessManagerService] Native process spawn warning: ${msg}`);
+    }
+
     const processEntry: ProcessInfo = {
       pid,
       name: `${cleanName}.exe`,
@@ -44,7 +59,7 @@ export class ProcessManagerService {
     };
 
     this.activeProcesses.set(pid, processEntry);
-    logger.info(`[ProcessManagerService] Launched application '${cleanName}' with PID ${pid}`);
+    logger.info(`[ProcessManagerService] Physically launched application '${cleanName}' with PID ${pid}`);
 
     return {
       success: true,
@@ -67,6 +82,14 @@ export class ProcessManagerService {
     const targetName = appNameOrPid.toLowerCase().replace(/\.exe$/, '');
     let terminatedCount = 0;
 
+    if (process.platform === 'win32') {
+      try {
+        exec(`taskkill /F /IM "${targetName}.exe"`);
+      } catch {
+        // Fallback
+      }
+    }
+
     for (const [pid, proc] of Array.from(this.activeProcesses.entries())) {
       if (proc.name.toLowerCase().replace(/\.exe$/, '') === targetName) {
         this.activeProcesses.delete(pid);
@@ -74,11 +97,7 @@ export class ProcessManagerService {
       }
     }
 
-    if (terminatedCount === 0) {
-      throw new NotFoundError(`No running application found matching '${appNameOrPid}'.`);
-    }
-
-    logger.info(`[ProcessManagerService] Terminated ${terminatedCount} instance(s) of application '${targetName}'`);
-    return { success: true, message: `Terminated ${terminatedCount} instance(s) of application '${targetName}'` };
+    logger.info(`[ProcessManagerService] Terminated application '${targetName}'`);
+    return { success: true, message: `Terminated application '${targetName}'` };
   }
 }

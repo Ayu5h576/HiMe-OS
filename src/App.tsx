@@ -19,6 +19,8 @@ import { VisionPage } from './components/pages/VisionPage';
 import { BrowserPage } from './components/pages/BrowserPage';
 import { ActivityFeedPage } from './components/pages/ActivityFeedPage';
 
+import { himeApi } from './services/api/himeApi';
+
 import type { 
   OSPage, 
   SystemMetrics, 
@@ -67,16 +69,35 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Periodic Telemetry Simulation
+  // Live Telemetry Sync from HiMe OS Native Backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) => ({
-        ...prev,
-        cpuUsage: Math.floor(18 + Math.random() * 10),
-        ramUsageGB: Number((4.5 + Math.random() * 0.3).toFixed(1)),
-        neuralLatencyMs: Math.floor(44 + Math.random() * 12)
-      }));
-    }, 5000);
+    const syncLiveTelemetry = async () => {
+      try {
+        const [sys, status] = await Promise.all([
+          himeApi.getRuntimeSystem().catch(() => null),
+          himeApi.getRuntimeStatus().catch(() => null),
+        ]);
+
+        if (sys) {
+          const ramUsedGB = Number((sys.ram.usedBytes / (1024 * 1024 * 1024)).toFixed(1));
+          const ramTotalGB = Number((sys.ram.totalBytes / (1024 * 1024 * 1024)).toFixed(1));
+
+          setMetrics((prev) => ({
+            ...prev,
+            cpuUsage: sys.cpu.usagePercent,
+            ramUsageGB: ramUsedGB,
+            ramTotalGB: ramTotalGB,
+            neuralLatencyMs: status?.health?.latencyMs ?? 3,
+            uptimeHours: Number(((status?.health?.agentUptimeSeconds ?? 3600) / 3600).toFixed(1)),
+          }));
+        }
+      } catch {
+        // Fallback
+      }
+    };
+
+    syncLiveTelemetry();
+    const interval = setInterval(syncLiveTelemetry, 5000);
     return () => clearInterval(interval);
   }, []);
 

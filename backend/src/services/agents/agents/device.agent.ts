@@ -20,8 +20,8 @@ export class DeviceAgent implements IAgent {
     let deviceCount = 0;
     if (context.projectId) {
       try {
-        const devices = await this.deviceService.getProjectDevices(userId, context.projectId);
-        deviceCount = devices.length;
+        const devices = await this.deviceService.getProjectDevices(userId, context.projectId, { page: 1, limit: 100 });
+        deviceCount = devices.data.length;
       } catch {
         deviceCount = 0;
       }

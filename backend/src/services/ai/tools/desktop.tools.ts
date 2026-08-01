@@ -76,7 +76,7 @@ export class ListFilesTool implements ITool {
   async execute(_userId: string, params: unknown): Promise<IToolResponse> {
     try {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
-      const entries = await this.agentService.listFiles(validated.path);
+      const entries = await this.agentService.listFiles(validated.path ?? '.');
       return ToolResponseFormatter.success(this.name, entries);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';

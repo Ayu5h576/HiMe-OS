@@ -1,17 +1,17 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   GitFork,
   Plus,
   Trash2,
   Sliders,
-  Clock,
   Sparkles,
-  Check,
-  ChevronRight
+  Play,
+  Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import GlassCard from "@/components/glass-card"
+import { himeApi } from "@/services/api/himeApi"
 
 interface AutomationRule {
   id: string
@@ -33,10 +33,38 @@ export default function AutomationPage() {
     { id: "rule-2", name: "ECO Climate when unoccupied", trigger: "No presence for 45 mins", action: "Configure thermostat to 66°F", isActive: true },
     { id: "rule-3", name: "Welcome back foyer light", trigger: "Front entrance door unlocked", action: "Enable main hallway lighting", isActive: false }
   ])
-
-  // Trigger Block state
   const [selectedTrigger, setSelectedTrigger] = useState("Time of Day")
   const [selectedAction, setSelectedAction] = useState("Run Scene: Home")
+  const [isExecuting, setIsExecuting] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    const fetchRules = async () => {
+      setIsLoading(true)
+      try {
+        await himeApi.ensureAuthenticated()
+        const apiRules = await himeApi.getAutomations().catch(() => [])
+        if (mounted && Array.isArray(apiRules) && apiRules.length > 0) {
+          setRules(
+            apiRules.map((r) => ({
+              id: r.id,
+              name: r.name,
+              trigger: "Configured Trigger Event",
+              action: r.description || "Execute Target Action",
+              isActive: r.enabled
+            }))
+          )
+        }
+      } catch (err) {
+        console.warn("[AutomationPage] Fetch error:", err)
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    fetchRules()
+    return () => { mounted = false }
+  }, [])
 
   const handleToggle = (id: string) => {
     setRules(
@@ -50,15 +78,48 @@ export default function AutomationPage() {
     setRules(rules.filter((rule) => rule.id !== id))
   }
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    const ruleName = `Custom Rule: ${selectedTrigger}`
+    try {
+      await himeApi.ensureAuthenticated()
+      const created = await himeApi.createAutomation(undefined, ruleName, "SCHEDULED", "CREATE_TASK").catch(() => null)
+      if (created) {
+        setRules((prev) => [
+          {
+            id: created.id,
+            name: created.name,
+            trigger: selectedTrigger,
+            action: selectedAction,
+            isActive: created.enabled
+          },
+          ...prev
+        ])
+        return
+      }
+    } catch (err) {
+      console.warn("[AutomationPage] Create automation error:", err)
+    }
+
     const newRule: AutomationRule = {
       id: `rule-${Date.now()}`,
-      name: `Custom Rule Triggered by ${selectedTrigger}`,
-      trigger: `${selectedTrigger} trigger configured`,
+      name: ruleName,
+      trigger: selectedTrigger,
       action: selectedAction,
       isActive: true
     }
     setRules([...rules, newRule])
+  }
+
+  const handleRunAutomation = async (ruleId: string) => {
+    setIsExecuting(ruleId)
+    try {
+      await himeApi.ensureAuthenticated()
+      await himeApi.runAutomation(ruleId).catch(() => null)
+    } catch (err) {
+      console.warn("[AutomationPage] Run error:", err)
+    } finally {
+      setTimeout(() => setIsExecuting(null), 1000)
+    }
   }
 
   return (
@@ -69,8 +130,6 @@ export default function AutomationPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left/Center Area (Spans 2 columns): Interactive visual builder */}
         <div className="lg:col-span-2 space-y-6">
           <GlassCard className="p-6 border border-zinc-800/40 space-y-6 relative overflow-hidden">
             <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
@@ -78,10 +137,7 @@ export default function AutomationPage() {
               Logic Node Designer
             </h3>
 
-            {/* Visual Builder Diagram blocks */}
             <div className="space-y-4">
-              
-              {/* TRIGGER IF BLOCK */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center shrink-0 font-bold text-xs text-blue-400 font-mono">
                   IF
@@ -100,94 +156,108 @@ export default function AutomationPage() {
                       <option className="bg-zinc-900" value="Voice Trigger">Wake word 'Good Night' parsed</option>
                     </select>
                   </div>
-                  <Clock className="w-4 h-4 text-zinc-600 mr-1" />
                 </div>
               </div>
 
-              {/* Vertical connector line */}
-              <div className="h-6 w-0.5 bg-zinc-800 ml-6" />
+              <div className="flex justify-center">
+                <div className="w-0.5 h-6 bg-zinc-800" />
+              </div>
 
-              {/* ACTION THEN BLOCK */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/25 flex items-center justify-center shrink-0 font-bold text-xs text-purple-400 font-mono">
                   THEN
                 </div>
                 <div className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3 flex items-center justify-between">
                   <div className="text-xs">
-                    <span className="text-zinc-500 font-medium font-mono block uppercase text-[10px]">Perform action</span>
+                    <span className="text-zinc-500 font-medium font-mono block uppercase text-[10px]">Select action</span>
                     <select
                       value={selectedAction}
                       onChange={(e) => setSelectedAction(e.target.value)}
                       className="bg-transparent border-0 text-zinc-300 font-semibold focus:ring-0 outline-none text-sm cursor-pointer mt-0.5"
                     >
-                      <option className="bg-zinc-900" value="Run Scene: Home">Run Preset: Arrive Home</option>
-                      <option className="bg-zinc-900" value="Lock Security Core">Lock all security doors</option>
-                      <option className="bg-zinc-900" value="Adjust climate to ECO">Configure thermostat to ECO temperature</option>
-                      <option className="bg-zinc-900" value="Mute announcements">Mute speaker announcements</option>
+                      <option className="bg-zinc-900" value="Run Scene: Home">Lock all external doors & arm security</option>
+                      <option className="bg-zinc-900" value="Climate Setpoint">Set thermostat target to 68°F</option>
+                      <option className="bg-zinc-900" value="Dim Lighting">Set main hallway lighting to 30%</option>
+                      <option className="bg-zinc-900" value="Execute Script">Run Espresso Pre-heat Sequence</option>
                     </select>
                   </div>
-                  <Sparkles className="w-4 h-4 text-zinc-600 mr-1" />
                 </div>
               </div>
-
             </div>
 
-            {/* Create Trigger button */}
-            <div className="pt-4 border-t border-zinc-850 flex justify-end">
+            <div className="pt-4 border-t border-zinc-800/40 flex justify-end">
               <Button
                 onClick={handleCreate}
-                className="bg-zinc-100 hover:bg-white text-zinc-950 font-semibold h-9 px-4 text-xs rounded-lg flex items-center gap-1.5 transition-all shadow"
+                className="h-10 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-500/10"
               >
                 <Plus className="w-4 h-4" />
-                Save Automation
+                Commit Automation Rule
               </Button>
             </div>
           </GlassCard>
 
-          {/* Active Rules List */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider font-mono">Active Routines ({rules.length})</h3>
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider font-mono">Active Rule Set ({rules.length})</h3>
+
+            {isLoading && (
+              <div className="flex items-center gap-2 text-xs text-zinc-500 p-2">
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                <span>Loading rules from automation engine...</span>
+              </div>
+            )}
+
             <div className="space-y-3">
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence>
                 {rules.map((rule) => (
                   <motion.div
                     key={rule.id}
+                    layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -50 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    layout
+                    exit={{ opacity: 0, y: -10 }}
                   >
-                    <GlassCard className="p-4 border border-zinc-800/40 flex items-center justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded bg-zinc-900 border border-zinc-800/50 mt-0.5 ${rule.isActive ? 'text-indigo-400' : 'text-zinc-600'}`}>
-                          <GitFork className="w-4 h-4" />
-                        </div>
-                        <div className="space-y-0.5">
-                          <h4 className="font-semibold text-sm text-zinc-200">{rule.name}</h4>
-                          <div className="text-[10px] text-zinc-500 font-semibold font-mono tracking-wider flex items-center gap-2">
-                            <span>IF: {rule.trigger}</span>
-                            <ChevronRight className="w-2.5 h-2.5" />
-                            <span>THEN: {rule.action}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rule controls: Toggle switch & Delete */}
+                    <GlassCard className="flex items-center justify-between p-4 border border-zinc-800/40 hover:border-zinc-800">
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleToggle(rule.id)}
-                          className={`w-9 h-5 rounded-full flex items-center p-0.5 transition-colors duration-200 focus:outline-hidden ${
-                            rule.isActive ? "bg-indigo-500 justify-end" : "bg-zinc-850 justify-start"
+                          className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                            rule.isActive ? "bg-emerald-500" : "bg-zinc-800"
                           }`}
                         >
-                          <span className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                              rule.isActive ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
                         </button>
+                        <div>
+                          <h4 className="font-semibold text-xs text-zinc-200">{rule.name}</h4>
+                          <p className="text-[10px] text-zinc-500 font-medium mt-0.5">
+                            {rule.trigger} → {rule.action}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRunAutomation(rule.id)}
+                          disabled={isExecuting === rule.id}
+                          className="h-7 w-7 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-900"
+                        >
+                          {isExecuting === rule.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                          ) : (
+                            <Play className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(rule.id)}
-                          className="h-7 w-7 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-850"
+                          className="h-7 w-7 text-zinc-500 hover:text-rose-400 hover:bg-zinc-900"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -200,28 +270,32 @@ export default function AutomationPage() {
           </div>
         </div>
 
-        {/* Right Sidebar Area: Blueprints block templates list */}
-        <div className="space-y-6">
-          <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Blueprint Blueprints
-            </h3>
-            
-            <div className="space-y-4">
-              {blueprintTemplates.map((bp) => (
-                <div key={bp.id} className="text-xs text-left space-y-1.5 border-b border-zinc-900 pb-3 last:border-0 last:pb-0">
-                  <h4 className="font-semibold text-zinc-300 flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5 text-indigo-400" />
-                    {bp.title}
-                  </h4>
-                  <p className="text-zinc-500 font-medium leading-relaxed">{bp.desc}</p>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        </div>
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            Blueprint Presets
+          </h3>
 
+          <div className="space-y-3">
+            {blueprintTemplates.map((bp) => (
+              <GlassCard key={bp.id} className="p-4 border border-zinc-800/40 text-left space-y-2 hover:border-zinc-800">
+                <h4 className="font-semibold text-xs text-zinc-200">{bp.title}</h4>
+                <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">{bp.desc}</p>
+                <Button
+                  onClick={() => {
+                    setSelectedTrigger(bp.title)
+                    setSelectedAction(bp.desc)
+                  }}
+                  variant="ghost"
+                  className="h-7 px-2 text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold p-0 flex items-center gap-1"
+                >
+                  Use Blueprint
+                  <GitFork className="w-3 h-3" />
+                </Button>
+              </GlassCard>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

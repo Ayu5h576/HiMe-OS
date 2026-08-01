@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Eye, 
-  Upload, 
   FileText, 
   Box, 
   Image as ImageIcon, 

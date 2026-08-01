@@ -12,11 +12,17 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import GlassCard from "@/components/glass-card"
-import { initialDevices } from "./index"
+import { type IoTDevice } from "./index"
+
+const fallbackDevices: IoTDevice[] = [
+  { id: "living-hvac", name: "Living Room Thermostat", room: "Living Room", type: "climate", status: "online", stateSummary: "Heating", value: "72°F", icon: Power },
+  { id: "front-lock", name: "Front Entrance Lock", room: "Foyer", type: "security", status: "online", stateSummary: "Locked & Armed", battery: 84, icon: Lock },
+  { id: "hall-lights", name: "Main Hallway Lights", room: "Hallway", type: "lighting", status: "online", stateSummary: "On", value: "60% Dim", icon: Sun },
+]
 
 export default function DeviceControlPage() {
   const { deviceId } = useParams<{ deviceId: string }>()
-  const device = initialDevices.find((d) => d.id === deviceId)
+  const device = fallbackDevices.find((d: IoTDevice) => d.id === deviceId) || fallbackDevices[0]
 
   // Redirect to list if device ID is invalid or device is offline
   if (!device || device.status === "offline") {

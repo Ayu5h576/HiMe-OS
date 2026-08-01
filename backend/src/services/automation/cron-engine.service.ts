@@ -35,7 +35,7 @@ export class CronEngineService {
    */
   async processDueAutomations(
     targetTime: Date = new Date(),
-    options: ProcessTickOptions = {},
+    _options: ProcessTickOptions = {},
   ): Promise<AutomationExecution[]> {
     const automations = await this.automationRepository.findScheduledAutomations();
     const executedResults: AutomationExecution[] = [];

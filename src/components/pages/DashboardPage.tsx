@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
-  Brain, 
-  Workflow, 
   HardDrive, 
-  TrendingUp, 
   ArrowUpRight,
   Battery,
   BatteryCharging,
@@ -12,15 +9,12 @@ import {
   MemoryStick,
   Monitor,
   Activity,
-  ShieldCheck,
   Zap,
   Volume2,
   Sun,
   Lock,
   Play,
-  CheckCircle2,
   RefreshCw,
-  Clock,
   Bell
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
@@ -172,8 +166,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="space-y-4 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-cyan-400/40 text-cyan-400 text-xs uppercase tracking-[0.3em] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-              HiMe OS Native Runtime Connected • 102 Endpoints Active
+              HiMe OS Native Runtime Connected • {memoriesCount} Memories • {automations.length} Automations Active
             </div>
+
+            {error && (
+              <div className="p-3 rounded-2xl glass border border-amber-400/40 text-amber-400 text-xs font-mono font-bold">
+                Backend Status Notice: {error}
+              </div>
+            )}
 
             <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
               {getGreeting()}, <br />

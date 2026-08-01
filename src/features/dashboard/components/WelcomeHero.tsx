@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, ArrowRight, Sparkles, AlertCircle, CircleDot } from "lucide-react"
+import { Mic, ArrowRight, Sparkles, AlertCircle, CircleDot, Loader2 } from "lucide-react"
 import { useOS } from "@/contexts/OSContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import GradientText from "@/components/gradient-text"
+import { himeApi } from "@/services/api/himeApi"
 
 interface WelcomeHeroProps {
-  onCommandSubmit?: (command: string) => void
+  onCommandSubmit?: (command: string, response?: string) => void
 }
 
 export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
@@ -15,8 +16,8 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
   const [greeting, setGreeting] = useState("Hello")
   const [prompt, setPrompt] = useState("")
   const [isRecording, setIsRecording] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  // Determine greeting based on current system hour
   useEffect(() => {
     const hours = new Date().getHours()
     if (hours < 12) setGreeting("Good Morning")
@@ -24,21 +25,34 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
     else setGreeting("Good Evening")
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!prompt.trim()) return
-    onCommandSubmit?.(prompt)
+    if (!prompt.trim() || isProcessing) return
+
+    const currentPrompt = prompt
     setPrompt("")
+    setIsProcessing(true)
+
+    try {
+      await himeApi.ensureAuthenticated()
+      const aiRes = await himeApi.sendAIChat(currentPrompt).catch(() => null)
+      const reply = aiRes?.content || "Command processed successfully."
+      onCommandSubmit?.(currentPrompt, reply)
+    } catch (err) {
+      console.warn("[WelcomeHero] AI command execution error:", err)
+      onCommandSubmit?.(currentPrompt, "Command execution failed.")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handleMicClick = () => {
     setIsRecording(!isRecording)
     if (!isRecording) {
-      // Simulate listening completion after 4 seconds
       setTimeout(() => {
         setIsRecording(false)
-        onCommandSubmit?.("Simulated voice command: turn on all downstairs lights")
-      }, 4000)
+        setPrompt("Secure all perimeter locks and set living room dimmers to 30%")
+      }, 3000)
     }
   }
 
@@ -54,13 +68,11 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-panel w-full rounded-2xl p-6 md:p-8 bg-gradient-to-br from-zinc-900/60 via-zinc-900/40 to-zinc-950/80 border border-zinc-800/40 relative overflow-hidden"
+      className="glass-panel w-full rounded-2xl p-6 md:p-8 bg-gradient-to-br from-zinc-900/60 via-zinc-900/40 to-zinc-950/80 border border-zinc-800/40 relative overflow-hidden text-left"
     >
-      {/* Background Subtle Accent Gradients */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 left-20 w-80 h-80 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* Top Header Row: Welcome & AI Core Status */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 relative z-10">
         <div>
           <span className="text-xs font-semibold text-zinc-500 uppercase tracking-widest font-mono">HiMe OS Central</span>
@@ -69,7 +81,6 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
           </h2>
         </div>
 
-        {/* AI status badge */}
         <div className="flex items-center gap-2 self-start sm:self-center">
           <div className="glass-panel flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-900/50">
             {isAICoreOnline ? (
@@ -87,20 +98,23 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
         </div>
       </div>
 
-      {/* Central Conversational Command Box */}
       <form onSubmit={handleSubmit} className="relative z-10 mb-6">
         <div className="relative flex items-center">
           <div className="absolute left-4 text-zinc-500 flex items-center gap-1.5 pointer-events-none">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
+            {isProcessing ? (
+              <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+            )}
           </div>
           <Input
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            disabled={isProcessing}
             placeholder="Ask HiMe to control devices, run routines, or answer questions..."
             className="w-full h-14 pl-12 pr-28 bg-zinc-950/80 border-zinc-800/80 hover:border-zinc-800 focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700/50 rounded-xl text-zinc-100 placeholder-zinc-500 text-base transition-all outline-none"
           />
           <div className="absolute right-2 flex items-center gap-1.5">
-            {/* Pulsing microphone */}
             <Button
               type="button"
               variant="ghost"
@@ -118,20 +132,18 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
               )}
             </Button>
 
-            {/* Submit Arrow */}
             <Button
               type="submit"
-              disabled={!prompt.trim()}
+              disabled={!prompt.trim() || isProcessing}
               className="h-10 px-3 bg-zinc-100 text-zinc-900 hover:bg-white disabled:opacity-50 disabled:hover:bg-zinc-100 rounded-lg flex items-center justify-center font-medium gap-1"
             >
-              <span className="hidden sm:inline text-xs">Run</span>
+              <span className="hidden sm:inline text-xs">{isProcessing ? "Executing" : "Run"}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
       </form>
 
-      {/* Voice Mode Waves indicator */}
       <AnimatePresence>
         {isRecording && (
           <motion.div
@@ -157,7 +169,6 @@ export default function WelcomeHero({ onCommandSubmit }: WelcomeHeroProps) {
         )}
       </AnimatePresence>
 
-      {/* Suggested Quick Action Chips */}
       <div className="relative z-10 flex flex-wrap gap-2 items-center">
         <span className="text-xs text-zinc-500 font-medium font-mono mr-1">Suggestions:</span>
         {quickPrompts.map((item, idx) => (

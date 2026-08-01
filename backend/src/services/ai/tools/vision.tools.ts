@@ -46,7 +46,7 @@ export class AnalyzeImageTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.analyzeImage(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         undefined,
         validated.provider,
       );
@@ -100,7 +100,7 @@ export class ExtractTextTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.extractText(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         { language: validated.language },
         validated.provider,
       );
@@ -152,7 +152,7 @@ export class DescribeSceneTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.describeScene(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         validated.provider,
       );
       return ToolResponseFormatter.success(this.name, result);
@@ -203,7 +203,7 @@ export class DetectObjectsTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.detectObjects(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         validated.provider,
       );
       return ToolResponseFormatter.success(this.name, result);
@@ -254,7 +254,7 @@ export class ScanQRCodeTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.scanQR(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         validated.provider,
       );
       return ToolResponseFormatter.success(this.name, result);
@@ -305,7 +305,7 @@ export class AnalyzeScreenshotTool implements ITool {
       const validated = ToolValidator.validate(this.parameterSchema, params, this.name);
       const result = await this.visionService.analyzeScreenshot(
         userId,
-        { data: validated.imageData, format: validated.format, encoding: 'base64' },
+        { data: validated.imageData, format: validated.format || 'png', encoding: 'base64' },
         validated.provider,
       );
       return ToolResponseFormatter.success(this.name, result);

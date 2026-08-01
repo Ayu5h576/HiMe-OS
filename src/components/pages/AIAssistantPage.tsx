@@ -12,8 +12,7 @@ import {
   Download,
   Image as ImageIcon,
   Zap,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
 import { himeApi } from '../../services/api/himeApi';

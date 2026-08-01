@@ -48,7 +48,7 @@ export class DesktopController {
   };
 
   readFile = async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const { path, encoding } = readFileQuerySchema.parse(req.query);
+    const { path } = readFileQuerySchema.parse(req.query);
     const data = await this.agentService.readFile(path);
     return reply.status(200).send({ success: true, data });
   };

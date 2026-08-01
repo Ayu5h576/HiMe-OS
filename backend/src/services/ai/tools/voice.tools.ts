@@ -102,7 +102,7 @@ export class TranscribeAudioTool implements ITool {
         conversationId: validated.conversationId,
         audio: {
           data: validated.audioData,
-          format: validated.format,
+          format: validated.format || 'wav',
           encoding: 'base64',
         },
         sessionId: validated.sessionId,

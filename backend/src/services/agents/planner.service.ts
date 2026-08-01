@@ -5,7 +5,7 @@ export class AgentPlannerService {
   /**
    * Decomposes a high-level user prompt into a structured, dependency-aware ExecutionPlan.
    */
-  async createPlan(prompt: string, context: AgentContext): Promise<ExecutionPlan> {
+  async createPlan(prompt: string, _context: AgentContext): Promise<ExecutionPlan> {
     logger.info(`[AgentPlannerService] Creating execution plan for prompt: "${prompt}"`);
 
     const planId = `plan-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;

@@ -1,5 +1,5 @@
 import { IAgent, AgentType, AgentInfo } from './agent.interface';
-import { NotFoundError, BadRequestError } from '../../utils/errors';
+import { NotFoundError } from '../../utils/errors';
 import { logger } from '../../config/logger';
 
 /**

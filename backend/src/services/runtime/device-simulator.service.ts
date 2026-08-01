@@ -1,7 +1,6 @@
 import { Device, DeviceType, DeviceStatus, ConnectionState } from '@prisma/client';
 import { DeviceService } from '../device.service';
 import { RuntimeEventBusService } from './event-bus.service';
-import { BadRequestError } from '../../utils/errors';
 
 export class DeviceSimulatorService {
   private deviceService: DeviceService;

@@ -48,7 +48,7 @@ export class RuntimeEventBusService {
       payload,
     };
 
-    this.eventHistory.unshift(event);
+    this.eventHistory.unshift(event as unknown as RuntimeEvent);
     if (this.eventHistory.length > this.maxHistory) {
       this.eventHistory.pop();
     }

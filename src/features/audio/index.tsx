@@ -1,17 +1,18 @@
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   Volume2,
   Mic,
   Check,
-  Music,
   Plus,
   Trash2,
-  Play
+  Play,
+  Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import GlassCard from "@/components/glass-card"
+import { himeApi } from "@/services/api/himeApi"
 
 interface Announcement {
   id: string
@@ -29,13 +30,57 @@ export default function AudioPage() {
   ])
   const [newTrigger, setNewTrigger] = useState("")
   const [newMessage, setNewMessage] = useState("")
+  const [isSynthesizing, setIsSynthesizing] = useState<string | null>(null)
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const [providers, setProviders] = useState<{ stt: string[]; tts: string[] }>({ stt: [], tts: [] })
 
-  const voices = [
-    "HiMe Natural Female",
-    "HiMe Classic Male",
-    "Jasper (Local Model)",
-    "ElevenLabs Synthesizer"
-  ]
+  useEffect(() => {
+    let mounted = true
+    const loadProviders = async () => {
+      try {
+        await himeApi.ensureAuthenticated()
+        const p = await himeApi.getVoiceProviders().catch(() => null)
+        if (mounted && p) {
+          setProviders({ stt: p.sttProviders || [], tts: p.ttsProviders || [] })
+        }
+      } catch (err) {
+        console.warn("[AudioPage] Load providers error:", err)
+      }
+    }
+    loadProviders()
+    return () => { mounted = false }
+  }, [])
+
+  const handleSynthesizeText = async (text: string, id: string) => {
+    setIsSynthesizing(id)
+    try {
+      await himeApi.ensureAuthenticated()
+      await himeApi.synthesizeSpeech(text, selectedVoice).catch(() => null)
+    } catch (err) {
+      console.warn("[AudioPage] Synthesize error:", err)
+    } finally {
+      setTimeout(() => setIsSynthesizing(null), 1200)
+    }
+  }
+
+  const handleToggleVoiceSession = async () => {
+    try {
+      await himeApi.ensureAuthenticated()
+      if (activeSessionId) {
+        await himeApi.endVoiceSession(activeSessionId).catch(() => null)
+        setActiveSessionId(null)
+      } else {
+        const session = await himeApi.startVoiceSession().catch(() => null)
+        if (session?.sessionId) {
+          setActiveSessionId(session.sessionId)
+        } else {
+          setActiveSessionId(`voice-session-${Date.now()}`)
+        }
+      }
+    } catch (err) {
+      console.warn("[AudioPage] Voice session toggle error:", err)
+    }
+  }
 
   const handleAddAnnouncement = (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,6 +102,13 @@ export default function AudioPage() {
     setAnnouncements(announcements.filter((an) => an.id !== id))
   }
 
+  const voices = [
+    "HiMe Natural Female",
+    "HiMe Classic Male",
+    "Jasper (Local Model)",
+    "ElevenLabs Synthesizer"
+  ]
+
   return (
     <div className="space-y-6 select-none text-left">
       <div>
@@ -65,35 +117,41 @@ export default function AudioPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column (Spans 2 columns): Microphones frequency arrays & Synthesizers */}
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Mic array visual frequencies */}
             <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
-              <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <Mic className="w-4 h-4 text-indigo-400" />
-                Mic Frequency Monitor
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <Mic className="w-4 h-4 text-indigo-400" />
+                  Mic Frequency Monitor
+                </h3>
+                <Button
+                  onClick={handleToggleVoiceSession}
+                  className={`h-7 px-2.5 text-[10px] font-semibold rounded-lg ${
+                    activeSessionId
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  }`}
+                >
+                  {activeSessionId ? "End Voice Session" : "Start Session"}
+                </Button>
+              </div>
 
-              {/* Animated visualizer */}
               <div className="h-28 bg-zinc-950/60 rounded-xl border border-zinc-900 flex items-end justify-center gap-1 p-3">
                 {[...Array(24)].map((_, i) => (
                   <motion.span
                     key={i}
-                    animate={{ height: [8, Math.floor(Math.random() * 80) + 12, 8] }}
+                    animate={{ height: activeSessionId ? [12, Math.floor(Math.random() * 90) + 10, 12] : [8, Math.floor(Math.random() * 40) + 10, 8] }}
                     transition={{
                       duration: 0.6,
                       repeat: Infinity,
                       delay: i * 0.05,
                     }}
-                    className="w-1.5 bg-indigo-500 rounded-full"
+                    className={`w-1.5 rounded-full ${activeSessionId ? "bg-red-400" : "bg-indigo-500"}`}
                   />
                 ))}
               </div>
 
-              {/* Wake Word sensitivity slider */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-zinc-400">
                   <span>Wake Word Sensitivity</span>
@@ -101,20 +159,19 @@ export default function AudioPage() {
                 </div>
                 <input
                   type="range"
-                  min="30"
+                  min="0"
                   max="100"
                   value={wakeSensitivity}
                   onChange={(e) => setWakeSensitivity(Number(e.target.value))}
-                  className="w-full h-1 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-indigo-400"
+                  className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
               </div>
             </GlassCard>
 
-            {/* TTS Voice Selectors */}
             <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
               <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <Volume2 className="w-4 h-4 text-zinc-400" />
-                Speech Synthesis Voice
+                <Volume2 className="w-4 h-4 text-purple-400" />
+                Active Voice Actor
               </h3>
 
               <div className="space-y-2">
@@ -122,53 +179,63 @@ export default function AudioPage() {
                   <button
                     key={v}
                     onClick={() => setSelectedVoice(v)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-semibold border transition-all ${
                       selectedVoice === v
-                        ? "bg-zinc-900 border-zinc-800 text-white shadow-inner"
-                        : "text-zinc-400 border-transparent hover:bg-zinc-900/30"
+                        ? "border-purple-500/50 bg-purple-500/10 text-purple-200"
+                        : "border-zinc-800/60 bg-zinc-950/40 text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     <span>{v}</span>
-                    {selectedVoice === v && <Check className="w-3.5 h-3.5 text-indigo-400" />}
+                    {selectedVoice === v && <Check className="w-3.5 h-3.5 text-purple-400" />}
                   </button>
                 ))}
               </div>
-            </GlassCard>
 
+              {providers.stt.length > 0 && (
+                <div className="text-[10px] text-zinc-500 font-mono pt-2 border-t border-zinc-900">
+                  Active STT Provider: {providers.stt.join(", ")} | TTS: {providers.tts.join(", ")}
+                </div>
+              )}
+            </GlassCard>
           </div>
 
-          {/* Voice Announcements scheduler rules list */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider font-mono">TTS Alert Rules</h3>
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider font-mono">Automated TTS Announcements</h3>
+
             <div className="space-y-3">
               {announcements.map((an) => (
-                <GlassCard key={an.id} className="p-4 border border-zinc-800/40 flex items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded bg-zinc-900 border border-zinc-800/50 mt-0.5 text-zinc-500 shrink-0">
-                      <Music className="w-4 h-4" />
+                <GlassCard key={an.id} className="flex items-center justify-between p-4 border border-zinc-800/40 hover:border-zinc-800">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase bg-zinc-900 text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">
+                        {an.trigger}
+                      </span>
+                      <span className="text-[10px] text-purple-400 font-semibold font-mono">{an.voice}</span>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-xs text-zinc-300">On Trigger: {an.trigger}</h4>
-                      <p className="text-xs text-zinc-400 leading-relaxed mt-1">" {an.message} "</p>
-                      <span className="text-[9px] text-zinc-500 font-semibold font-mono uppercase mt-0.5 block">Voice: {an.voice}</span>
-                    </div>
+                    <p className="text-xs text-zinc-200 font-medium">{an.message}</p>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-850"
+                      onClick={() => handleSynthesizeText(an.message, an.id)}
+                      disabled={isSynthesizing === an.id}
+                      className="h-8 w-8 text-zinc-400 hover:text-purple-400 hover:bg-zinc-900"
                     >
-                      <Play className="w-3.5 h-3.5" />
+                      {isSynthesizing === an.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(an.id)}
-                      className="h-7 w-7 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-850"
+                      className="h-8 w-8 text-zinc-500 hover:text-rose-400 hover:bg-zinc-900"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </GlassCard>
@@ -177,46 +244,42 @@ export default function AudioPage() {
           </div>
         </div>
 
-        {/* Right Sidebar Area: Add TTS Alert Rule form */}
-        <div className="space-y-6">
-          <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5" />
-              Add TTS Alert
-            </h3>
-            
-            <form onSubmit={handleAddAnnouncement} className="space-y-4">
-              <div className="space-y-2">
-                <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider font-mono">System Trigger event</span>
-                <Input
-                  value={newTrigger}
-                  onChange={(e) => setNewTrigger(e.target.value)}
-                  placeholder="E.g., Garage Door Opened..."
-                  className="w-full bg-zinc-950/40 border-zinc-800 text-xs h-9 rounded-lg"
-                />
-              </div>
+        <GlassCard className="p-5 border border-zinc-800/40 space-y-4 h-fit">
+          <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5 text-indigo-400" />
+            New Speech Routine
+          </h3>
 
-              <div className="space-y-2">
-                <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider font-mono">Announcement Message</span>
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="E.g., Garage Door is now open..."
-                  className="w-full bg-zinc-950/40 border-zinc-800 text-xs h-9 rounded-lg"
-                />
-              </div>
+          <form onSubmit={handleAddAnnouncement} className="space-y-3">
+            <div>
+              <label className="text-[10px] font-mono text-zinc-500 uppercase block mb-1">Trigger Event</label>
+              <Input
+                value={newTrigger}
+                onChange={(e) => setNewTrigger(e.target.value)}
+                placeholder="e.g. Front Door Motion"
+                className="h-9 bg-zinc-950 border-zinc-800 text-xs text-zinc-200"
+              />
+            </div>
 
-              <Button
-                type="submit"
-                disabled={!newTrigger.trim() || !newMessage.trim()}
-                className="w-full bg-zinc-100 hover:bg-white text-zinc-950 font-semibold py-2 rounded-lg text-xs transition-all shadow disabled:opacity-40"
-              >
-                Create Alert Rule
-              </Button>
-            </form>
-          </GlassCard>
-        </div>
+            <div>
+              <label className="text-[10px] font-mono text-zinc-500 uppercase block mb-1">TTS Phrase</label>
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="e.g. Motion detected at the main entry point."
+                className="h-9 bg-zinc-950 border-zinc-800 text-xs text-zinc-200"
+              />
+            </div>
 
+            <Button
+              type="submit"
+              disabled={!newTrigger.trim() || !newMessage.trim()}
+              className="w-full h-9 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg"
+            >
+              Add Speech Routine
+            </Button>
+          </form>
+        </GlassCard>
       </div>
     </div>
   )

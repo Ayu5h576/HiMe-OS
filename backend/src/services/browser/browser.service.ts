@@ -24,7 +24,6 @@ import {
   FormFillPayload,
   BrowserProviderInfo,
 } from './provider.interface';
-import { logger } from '../../config/logger';
 
 export class BrowserService {
   private registry: BrowserProviderRegistry;
@@ -192,7 +191,7 @@ export class BrowserService {
     return record;
   }
 
-  async getCookies(userId: string, sessionId: string, providerName?: string): Promise<BrowserCookie[]> {
+  async getCookies(_userId: string, sessionId: string, providerName?: string): Promise<BrowserCookie[]> {
     return this.cookieService.getCookies(sessionId, providerName);
   }
 

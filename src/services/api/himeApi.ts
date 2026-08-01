@@ -47,9 +47,23 @@ class HimeApiService {
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // 1. Authentication & Session Initialization
-  // ───────────────────────────────────────────────────────────────────────────
+  private activeProjectId: string | null = null;
+
+  async getActiveProjectId(): Promise<string> {
+    if (this.activeProjectId) return this.activeProjectId;
+    try {
+      const projects = await this.getProjects();
+      if (projects && projects.length > 0) {
+        this.activeProjectId = projects[0].id;
+        return projects[0].id;
+      }
+      const created = await this.createProject('HiMe OS Workspace');
+      this.activeProjectId = created.id;
+      return created.id;
+    } catch {
+      return 'default-project-id';
+    }
+  }
 
   async registerDemoUser(): Promise<{ accessToken: string; user: { id: string; name: string; email: string } }> {
     const email = `hime-user-${Date.now()}@himeos.local`;
@@ -78,12 +92,14 @@ class HimeApiService {
     if (existing) {
       try {
         await this.getMe();
+        await this.getActiveProjectId();
         return existing;
       } catch {
         // Token invalid, fallback to register
       }
     }
     const reg = await this.registerDemoUser();
+    await this.getActiveProjectId();
     return reg.accessToken;
   }
 
@@ -240,15 +256,16 @@ class HimeApiService {
     });
   }
 
-  async sendAIChat(prompt: string, conversationId?: string) {
+  async sendAIChat(prompt: string, conversationId?: string, provider?: string, model?: string) {
     return this.request<{
       content: string;
       model: string;
+      provider: string;
       toolCalls?: Array<{ id: string; name: string; arguments: Record<string, unknown> }>;
       tokensUsed?: number;
     }>('/ai/chat', {
       method: 'POST',
-      body: JSON.stringify({ prompt, conversationId }),
+      body: JSON.stringify({ prompt, conversationId, provider, model }),
     });
   }
 
@@ -269,12 +286,14 @@ class HimeApiService {
   // 5. Memory System (Phase 6, 9, 10)
   // ───────────────────────────────────────────────────────────────────────────
 
-  async getMemories(projectId: string) {
-    return this.request<Array<{ id: string; title: string; category: string; content: string; importance: number; createdAt: string; pinned?: boolean }>>(`/projects/${projectId}/memories`);
+  async getMemories(projectId?: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<Array<{ id: string; title: string; category: string; content: string; importance: number; createdAt: string; pinned?: boolean }>>(`/projects/${pid}/memories`);
   }
 
-  async createMemory(projectId: string, title: string, category: string, content: string, importance = 80) {
-    return this.request<{ id: string; title: string; content: string }>(`/projects/${projectId}/memories`, {
+  async createMemory(projectId: string | undefined, title: string, category: string, content: string, importance = 80) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<{ id: string; title: string; content: string }>(`/projects/${pid}/memories`, {
       method: 'POST',
       body: JSON.stringify({ title, category, content, importance }),
     });
@@ -419,12 +438,14 @@ class HimeApiService {
   // 9. Automation Engine Endpoints (Phase 11, 16, 17)
   // ───────────────────────────────────────────────────────────────────────────
 
-  async getAutomations(projectId: string) {
-    return this.request<Array<{ id: string; name: string; description?: string; enabled: boolean; lastRun?: string; executionCount: number }>>(`/projects/${projectId}/automations`);
+  async getAutomations(projectId?: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<Array<{ id: string; name: string; description?: string; enabled: boolean; lastRun?: string; executionCount: number }>>(`/projects/${pid}/automations`);
   }
 
-  async createAutomation(projectId: string, name: string, triggerType: string, actionType: string) {
-    return this.request<{ id: string; name: string; enabled: boolean }>(`/projects/${projectId}/automations`, {
+  async createAutomation(projectId: string | undefined, name: string, triggerType: string, actionType: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<{ id: string; name: string; enabled: boolean }>(`/projects/${pid}/automations`, {
       method: 'POST',
       body: JSON.stringify({ name, triggerType, actionType, enabled: true }),
     });
@@ -455,19 +476,86 @@ class HimeApiService {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 11. Multi-Agent Framework (Phase 21)
+  // 12. Device Framework & Task Management (Phase 4, 14)
   // ───────────────────────────────────────────────────────────────────────────
 
-  async getAgentsList() {
-    return this.request<Array<{ id: string; name: string; type: string; description: string; capabilities: string[] }>>('/agents');
+  async getProjectDevices(projectId?: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<Array<{
+      id: string;
+      name: string;
+      type: string;
+      manufacturer?: string;
+      model?: string;
+      status: string;
+      connectionState: string;
+      batteryLevel?: number;
+      capabilities?: string[];
+      metadata?: Record<string, unknown>;
+    }>>(`/projects/${pid}/devices`);
   }
 
-  async getAgentStatus() {
-    return this.request<{ totalAgents: number; activeAgents: number; status: string }>('/agents/status');
+  async createDevice(projectId: string | undefined, name: string, type: string, manufacturer?: string, model?: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<{ id: string; name: string; type: string }>(`/projects/${pid}/devices`, {
+      method: 'POST',
+      body: JSON.stringify({ name, type, manufacturer, model }),
+    });
   }
 
-  async getAgentActivity() {
-    return this.request<Array<{ id: string; agentType: string; action: string; timestamp: string }>>('/agents/activity');
+  async getDevice(id: string) {
+    return this.request<{ id: string; name: string; type: string; status: string; connectionState: string; metadata?: Record<string, unknown> }>(`/devices/${id}`);
+  }
+
+  async updateDevice(id: string, updates: Record<string, unknown>) {
+    return this.request<{ id: string; name: string; metadata?: Record<string, unknown> }>(`/devices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async connectDevice(id: string) {
+    return this.request<{ id: string; status: string; connectionState: string }>(`/devices/${id}/connect`, {
+      method: 'POST',
+    });
+  }
+
+  async disconnectDevice(id: string) {
+    return this.request<{ id: string; status: string; connectionState: string }>(`/devices/${id}/disconnect`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteDevice(id: string) {
+    return this.request<{ success: boolean }>(`/devices/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getTasks(projectId?: string) {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<Array<{ id: string; title: string; description?: string; status: string; priority: string; dueDate?: string }>>(`/projects/${pid}/tasks`);
+  }
+
+  async createTask(projectId: string | undefined, title: string, description?: string, priority = 'MEDIUM') {
+    const pid = (!projectId || projectId === 'default-project-id') ? await this.getActiveProjectId() : projectId;
+    return this.request<{ id: string; title: string; status: string }>(`/projects/${pid}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({ title, description, priority }),
+    });
+  }
+
+  async updateTask(id: string, updates: Record<string, unknown>) {
+    return this.request<{ id: string; title: string; status: string }>(`/tasks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteTask(id: string) {
+    return this.request<{ success: boolean }>(`/tasks/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

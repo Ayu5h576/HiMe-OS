@@ -20,7 +20,7 @@ export class ConversationAgent implements IAgent {
     let messageCount = 0;
     if (context.conversationId) {
       try {
-        const msgs = await this.conversationService.getMessages(userId, context.conversationId, { limit: 5 });
+        const msgs = await this.conversationService.getMessages(userId, context.conversationId, { page: 1, limit: 5 });
         messageCount = msgs.data.length;
       } catch {
         messageCount = 0;

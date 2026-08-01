@@ -20,7 +20,7 @@ export class TaskAgent implements IAgent {
     let taskCount = 0;
     if (context.projectId) {
       try {
-        const page = await this.taskService.getProjectTasks(userId, context.projectId, {});
+        const page = await this.taskService.getProjectTasks(userId, context.projectId, { sortBy: 'createdAt', sortOrder: 'desc', page: 1, limit: 10 });
         taskCount = page.data.length;
       } catch {
         taskCount = 1;

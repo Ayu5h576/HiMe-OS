@@ -4,10 +4,8 @@ import {
   Sparkles, 
   Play, 
   Clock, 
-  Cpu, 
   RefreshCw,
-  Zap,
-  CheckCircle2
+  Zap
 } from 'lucide-react';
 import { GlassCard } from '../common/GlassCard';
 import { himeApi } from '../../services/api/himeApi';
@@ -51,7 +49,7 @@ export const AutomationPage: React.FC = () => {
       const created = await himeApi.createAutomation('default-project-id', aiPrompt, 'SCHEDULED', 'LOG_EVENT');
       setAiPrompt('');
       fetchAutomations();
-      setSelectedAuto(created);
+      setSelectedAuto({ ...created, executionCount: 0 });
       setTestLog(`[${new Date().toLocaleTimeString()}] Created automation workflow "${created.name}" on HiMe OS Backend.`);
     } catch (err: any) {
       setTestLog(`Error building automation: ${err.message}`);

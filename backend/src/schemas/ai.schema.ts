@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 export const aiChatSchema = z.object({
-  conversationId: z.string().min(1, 'Conversation ID is required'),
-  message: z.string().min(1, 'Message prompt is required'),
+  conversationId: z.string().optional(),
+  message: z.string().optional(),
+  prompt: z.string().optional(),
   provider: z.enum(['openai', 'gemini', 'claude', 'ollama']).optional(),
   model: z.string().optional(),
 });
@@ -16,6 +17,7 @@ export const aiResponseSwaggerSchema = {
     provider: { type: 'string', enum: ['openai', 'gemini', 'claude', 'ollama'], example: 'openai' },
     model: { type: 'string', example: 'gpt-4o-mini' },
     message: { type: 'string', example: 'OpenAI (gpt-4o-mini) response to: "Hello"' },
+    content: { type: 'string', example: 'Response text' },
     usage: {
       type: 'object',
       properties: {
@@ -42,10 +44,10 @@ export const aiChatSwaggerSchema = {
   security: [{ bearerAuth: [] }],
   body: {
     type: 'object',
-    required: ['conversationId', 'message'],
     properties: {
       conversationId: { type: 'string', example: 'cm4conv123456' },
       message: { type: 'string', example: 'Hello, explain HiMe OS architecture.' },
+      prompt: { type: 'string', example: 'Hello, explain HiMe OS architecture.' },
       provider: {
         type: 'string',
         enum: ['openai', 'gemini', 'claude', 'ollama'],

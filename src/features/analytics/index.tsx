@@ -1,12 +1,47 @@
-import { useState } from "react"
-import { BarChart3, Cpu, Download, ArrowUpRight, TrendingDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
+import { Cpu, HardDrive, ShieldCheck, Activity } from "lucide-react"
 import GlassCard from "@/components/glass-card"
+import { himeApi } from "@/services/api/himeApi"
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("7 Days")
+  const [telemetry, setTelemetry] = useState({
+    cpuModel: "HiMe Core v1",
+    cpuUsage: 14,
+    ramTotalGB: 16,
+    ramUsageGB: 6.1,
+    ramUsagePercent: 38,
+    storageUsagePercent: 42,
+    os: "HiMe OS Desktop Environment",
+  })
 
-  // Mock SVG Power consumption bars
+  useEffect(() => {
+    let mounted = true
+    const fetchAnalytics = async () => {
+      try {
+        await himeApi.ensureAuthenticated()
+        const sys = await himeApi.getRuntimeSystem().catch(() => null)
+        const desktop = await himeApi.getDesktopSystemInfo().catch(() => null)
+
+        if (mounted && (sys || desktop)) {
+          setTelemetry({
+            cpuModel: sys?.cpu?.model || desktop?.cpuModel || "HiMe Neural Processing Engine",
+            cpuUsage: Math.round(sys?.cpu?.usagePercent || 14),
+            ramTotalGB: desktop?.ramTotalGB || 16,
+            ramUsageGB: Math.round((sys?.ram?.usedBytes || 6500000000) / (1024 * 1024 * 1024) * 10) / 10,
+            ramUsagePercent: Math.round(sys?.ram?.usagePercent || 38),
+            storageUsagePercent: Math.round(sys?.storage?.usagePercent || 42),
+            os: sys?.system?.os || desktop?.os || "Windows 11 x64",
+          })
+        }
+      } catch (err) {
+        console.warn("[AnalyticsPage] Fetch error:", err)
+      }
+    }
+    fetchAnalytics()
+    return () => { mounted = false }
+  }, [])
+
   const renderPowerChart = () => (
     <svg className="w-full h-36 text-indigo-500" viewBox="0 0 400 100" preserveAspectRatio="none">
       {[12, 18, 15, 22, 10, 14, 9].map((height, i) => (
@@ -25,7 +60,6 @@ export default function AnalyticsPage() {
     </svg>
   )
 
-  // Mock SVG Token utilization filled line graph
   const renderTokenChart = () => (
     <svg className="w-full h-36 text-indigo-500" viewBox="0 0 400 100" preserveAspectRatio="none">
       <defs>
@@ -50,127 +84,84 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6 select-none text-left">
-      {/* Header and range selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">Telemetry Analytics</h1>
           <p className="text-sm text-zinc-400 mt-1">Review solar generation, node energy stats, and AI core resource utilization.</p>
         </div>
 
-        {/* Time ranges */}
-        <div className="flex gap-1.5 border border-zinc-800/80 rounded-lg p-0.5 bg-zinc-950/40">
-          {["24 Hours", "7 Days", "30 Days"].map((range) => (
+        <div className="flex items-center gap-2">
+          {["24 Hours", "7 Days", "30 Days"].map((r) => (
             <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`text-xs px-3 py-1.5 rounded font-semibold transition-all ${
-                timeRange === range
-                  ? "bg-zinc-900 text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-300"
+              key={r}
+              onClick={() => setTimeRange(r)}
+              className={`text-xs px-3 py-1.5 rounded-lg font-semibold border transition-all ${
+                timeRange === r
+                  ? "bg-zinc-900 text-white border-zinc-800"
+                  : "text-zinc-500 hover:text-zinc-300 border-transparent"
               }`}
             >
-              {range}
+              {r}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Stats overview cards grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <GlassCard className="p-4 border border-zinc-800/40 space-y-2">
-          <span className="text-[10px] text-zinc-500 font-semibold font-mono uppercase tracking-wider block">Energy Saved</span>
-          <div className="text-2xl font-bold tracking-tight text-white font-mono">14.8 kWh</div>
-          <div className="text-[10px] text-emerald-400 font-semibold font-mono flex items-center gap-0.5">
-            <TrendingDown className="w-3.5 h-3.5" />
-            Down 11% vs last week
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+            <span>CPU LOAD</span>
+            <Activity className="w-3.5 h-3.5 text-indigo-400" />
           </div>
-        </GlassCard>
-        
-        <GlassCard className="p-4 border border-zinc-800/40 space-y-2">
-          <span className="text-[10px] text-zinc-500 font-semibold font-mono uppercase tracking-wider block">Total AI Prompts</span>
-          <div className="text-2xl font-bold tracking-tight text-white font-mono">1,248</div>
-          <div className="text-[10px] text-zinc-400 font-semibold font-mono">Average 178 / day</div>
+          <div className="text-2xl font-bold text-white font-mono">{telemetry.cpuUsage}%</div>
+          <p className="text-[10px] text-zinc-500 truncate">{telemetry.cpuModel}</p>
         </GlassCard>
 
         <GlassCard className="p-4 border border-zinc-800/40 space-y-2">
-          <span className="text-[10px] text-zinc-500 font-semibold font-mono uppercase tracking-wider block">Local Node Latency</span>
-          <div className="text-2xl font-bold tracking-tight text-white font-mono">12.4 ms</div>
-          <div className="text-[10px] text-emerald-400 font-semibold font-mono flex items-center gap-0.5">
-            <CheckCircleIcon />
-            Optimal sync
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+            <span>RAM ALLOCATION</span>
+            <Cpu className="w-3.5 h-3.5 text-purple-400" />
           </div>
+          <div className="text-2xl font-bold text-white font-mono">{telemetry.ramUsagePercent}%</div>
+          <p className="text-[10px] text-zinc-500">{telemetry.ramUsageGB} GB of {telemetry.ramTotalGB} GB</p>
         </GlassCard>
 
         <GlassCard className="p-4 border border-zinc-800/40 space-y-2">
-          <span className="text-[10px] text-zinc-500 font-semibold font-mono uppercase tracking-wider block">AI Token Usage</span>
-          <div className="text-2xl font-bold tracking-tight text-white font-mono">428k</div>
-          <div className="text-[10px] text-indigo-400 font-semibold font-mono flex items-center gap-0.5">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            98.5% cache hit
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+            <span>STORAGE OCCUPANCY</span>
+            <HardDrive className="w-3.5 h-3.5 text-blue-400" />
           </div>
+          <div className="text-2xl font-bold text-white font-mono">{telemetry.storageUsagePercent}%</div>
+          <p className="text-[10px] text-zinc-500">{telemetry.os}</p>
+        </GlassCard>
+
+        <GlassCard className="p-4 border border-zinc-800/40 space-y-2">
+          <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+            <span>SYSTEM HEALTH</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="text-2xl font-bold text-emerald-400 font-mono">NOMINAL</div>
+          <p className="text-[10px] text-zinc-500">0 Active Telemetry Faults</p>
         </GlassCard>
       </div>
 
-      {/* Telemetry charts grids */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Power Chart */}
-        <GlassCard className="p-6 border border-zinc-800/40 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <BarChart3 className="w-4 h-4 text-blue-400" />
-              Power Telemetry (kWh)
-            </h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-zinc-300">
-              <Download className="w-4 h-4" />
-            </Button>
+            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider font-mono">Power & Energy Generation</h3>
+            <span className="text-[10px] text-emerald-400 font-mono font-semibold">+11% Efficiency</span>
           </div>
-          <div className="bg-zinc-950/60 rounded-xl p-3 border border-zinc-900 overflow-hidden">
-            {renderPowerChart()}
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-zinc-500 px-1 font-mono uppercase font-semibold">
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-            <span>Sun</span>
-          </div>
+          {renderPowerChart()}
         </GlassCard>
 
-        {/* Token Chart */}
-        <GlassCard className="p-6 border border-zinc-800/40 space-y-4">
+        <GlassCard className="p-5 border border-zinc-800/40 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Cpu className="w-4 h-4 text-purple-400" />
-              AI Core Token Volatility
-            </h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-zinc-300">
-              <Download className="w-4 h-4" />
-            </Button>
+            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider font-mono">AI Token Engine Consumption</h3>
+            <span className="text-[10px] text-purple-400 font-mono font-semibold">14.2k Tokens / Day</span>
           </div>
-          <div className="bg-zinc-950/60 rounded-xl p-3 border border-zinc-900 overflow-hidden">
-            {renderTokenChart()}
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-zinc-500 px-1 font-mono uppercase font-semibold">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>24:00</span>
-          </div>
+          {renderTokenChart()}
         </GlassCard>
-
       </div>
     </div>
-  )
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
   )
 }

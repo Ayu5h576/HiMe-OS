@@ -41,7 +41,7 @@ export class VirtualSensorService {
     eventType: VirtualSensorEventType,
     payload: Record<string, unknown> = {},
   ): Promise<{ device: Device; event: string }> {
-    const device = await this.deviceService.getDeviceById(userId, deviceId);
+    await this.deviceService.getDeviceById(userId, deviceId);
     let stateUpdates: Record<string, unknown> = {};
 
     switch (eventType) {
@@ -86,7 +86,7 @@ export class VirtualSensorService {
     );
 
     // Process triggers via DeviceEventService
-    let triggerType = TriggerType.DEVICE_STATE_CHANGED;
+    let triggerType: TriggerType = TriggerType.DEVICE_STATE_CHANGED;
     if (eventType === 'BATTERY_LOW') triggerType = TriggerType.DEVICE_BATTERY_LOW;
     if (eventType === 'CONNECTION_LOST') triggerType = TriggerType.DEVICE_DISCONNECTED;
     if (eventType === 'CONNECTION_RESTORED') triggerType = TriggerType.DEVICE_CONNECTED;

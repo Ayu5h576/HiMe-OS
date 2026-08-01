@@ -165,4 +165,8 @@ export class NativeRuntimeAgentService {
   getHealthReport(): Promise<AgentHealthReport> {
     return this.healthReporter.generateHealthReport();
   }
+
+  getCommandChannel(): CommandChannelService {
+    return this.commandChannel;
+  }
 }
