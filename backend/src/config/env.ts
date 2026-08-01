@@ -24,6 +24,13 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_HOST: z.string().default('http://localhost:11434'),
+  OLLAMA_ENABLED: z
+    .string()
+    .transform((val) => val === 'true' || val === '1')
+    .default('true'),
+  OLLAMA_MODEL: z.string().default('llama3.1'),
+  OLLAMA_TIMEOUT: z.string().transform(Number).default('120000'),
   DEFAULT_MODEL: z.string().optional(),
 
   // Vector Search Infrastructure Configuration

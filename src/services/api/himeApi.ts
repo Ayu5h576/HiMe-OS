@@ -282,6 +282,25 @@ class HimeApiService {
     });
   }
 
+  async getAIProviders() {
+    return this.request<Array<{ name: string; enabled: boolean; reachable: boolean; activeModel: string; availableModels: string[] }>>('/ai/providers');
+  }
+
+  async getOllamaModels() {
+    return this.request<Array<{ name: string; model: string; modifiedAt: string; size: number; digest: string }>>('/ai/providers/ollama/models');
+  }
+
+  async getOllamaStatus() {
+    return this.request<{ reachable: boolean; enabled: boolean; host: string; version: string; status: string; activeModel: string; installedModelsCount: number; installedModels: string[]; latencyMs: number; memoryUsageBytes?: number }>('/ai/providers/ollama/status');
+  }
+
+  async setOllamaModel(model: string) {
+    return this.request<{ activeModel: string }>('/ai/providers/ollama/model', {
+      method: 'POST',
+      body: JSON.stringify({ model }),
+    });
+  }
+
   // ───────────────────────────────────────────────────────────────────────────
   // 5. Memory System (Phase 6, 9, 10)
   // ───────────────────────────────────────────────────────────────────────────

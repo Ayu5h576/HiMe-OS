@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { AIService } from '../services/ai/ai.service';
 import { ConversationService } from '../services/conversation.service';
 import { aiChatSchema } from '../schemas/ai.schema';
+import { setOllamaModelSchema } from '../schemas/ollama.schema';
 import { MessageRole } from '@prisma/client';
 import { BadRequestError } from '../utils/errors';
 
@@ -91,5 +92,38 @@ export class AIController {
         },
       });
     }
+  };
+
+  listProviders = async (_req: FastifyRequest, reply: FastifyReply) => {
+    const providers = await this.aiService.listProviders();
+    return reply.status(200).send({
+      success: true,
+      data: providers,
+    });
+  };
+
+  getOllamaModels = async (_req: FastifyRequest, reply: FastifyReply) => {
+    const models = await this.aiService.getOllamaModels();
+    return reply.status(200).send({
+      success: true,
+      data: models,
+    });
+  };
+
+  getOllamaStatus = async (_req: FastifyRequest, reply: FastifyReply) => {
+    const status = await this.aiService.getOllamaStatus();
+    return reply.status(200).send({
+      success: true,
+      data: status,
+    });
+  };
+
+  setOllamaModel = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { model } = setOllamaModelSchema.parse(req.body);
+    const result = this.aiService.setOllamaModel(model);
+    return reply.status(200).send({
+      success: true,
+      data: result,
+    });
   };
 }

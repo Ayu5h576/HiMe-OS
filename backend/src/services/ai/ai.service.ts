@@ -3,7 +3,14 @@ import { ContextBuilder } from './context-builder';
 import { ToolExecutor } from './tools/tool-executor';
 import { ToolRegistry } from './tools/tool-registry';
 import { IToolResponse } from './tools/tool-response';
-import { GenerateOptions, NormalizedAIResponse, NormalizedPrompt } from '../../types/ai';
+import {
+  AIProviderStatus,
+  GenerateOptions,
+  NormalizedAIResponse,
+  NormalizedPrompt,
+  OllamaHealthStatus,
+  OllamaModelMetadata,
+} from '../../types/ai';
 
 export class AIService {
   private providerManager: ProviderManager;
@@ -40,8 +47,38 @@ export class AIService {
     return provider.generateResponse(options);
   }
 
+  async *streamChatResponse(options: GenerateOptions): AsyncGenerator<string, void, unknown> {
+    const provider = this.providerManager.getProvider(options.provider);
+    if (provider.streamResponse) {
+      yield* provider.streamResponse(options);
+    } else {
+      const response = await provider.generateResponse(options);
+      yield response.message;
+    }
+  }
+
   async executeToolCall(toolName: string, userId: string, params: unknown): Promise<IToolResponse> {
     return this.toolExecutor.executeTool(toolName, userId, params);
+  }
+
+  async listProviders(): Promise<AIProviderStatus[]> {
+    return this.providerManager.getProviderStatusList();
+  }
+
+  async getOllamaModels(): Promise<OllamaModelMetadata[]> {
+    const ollama = this.providerManager.getOllamaProvider();
+    return ollama.listModelsDetailed();
+  }
+
+  async getOllamaStatus(): Promise<OllamaHealthStatus> {
+    const ollama = this.providerManager.getOllamaProvider();
+    return ollama.getDetailedStatus();
+  }
+
+  setOllamaModel(model: string): { activeModel: string } {
+    const ollama = this.providerManager.getOllamaProvider();
+    ollama.setActiveModel(model);
+    return { activeModel: ollama.getActiveModel() };
   }
 
   getProviderManager(): ProviderManager {

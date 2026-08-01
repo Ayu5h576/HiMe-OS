@@ -75,6 +75,16 @@ This document tracks all audit findings, bug fixes, real hardware integrations, 
 - [x] **Perception Engines (`src/features/camera-vision` & `src/features/audio`)**: Connected neural OCR, object detection, screenshot analysis, speech synthesis, and voice sessions.
 - [x] **Telemetry & Header (`src/features/analytics` & `src/layouts/Header.tsx`)**: Connected CPU/RAM/Storage telemetry cards, unread notifications dropdown, and live core status badges.
 
+### Phase 8: Production Ollama Provider Integration
+- [x] **Production Ollama Provider (`OllamaProvider`)**: Implemented full production integration using official Ollama HTTP API (`GET /api/tags`, `POST /api/chat`, `POST /api/generate`, `POST /api/embeddings`).
+- [x] **Host & Environment Configuration**: Configurable via `OLLAMA_HOST` / `OLLAMA_BASE_URL` (`http://localhost:11434`), `OLLAMA_ENABLED` (`true`), `OLLAMA_MODEL` (`llama3.1`), `OLLAMA_TIMEOUT` (`120000`ms).
+- [x] **Model Discovery & Selection Hierarchy**: Automatically detects installed models via `/api/tags`, returning full metadata (size, digest, modifiedAt, family). Selection priority: User setting -> Active provider setting -> Environment variable -> Default model.
+- [x] **Streaming Chat Support**: Supports streaming response generation using `streamResponse()`, `startStream()`, `stopStream()`, `collectChunks()`, and `finalResponse()`.
+- [x] **Tool Calling & RAG Integration**: Seamlessly passes tool definitions to Ollama and integrates with `ToolExecutor` and `ContextBuilder` without duplicate execution paths.
+- [x] **Health Monitoring & Metrics**: Exposes reachability, server version, latency ms, active model, and memory footprint via `getDetailedStatus()`.
+- [x] **New Endpoints**: Added `GET /ai/providers`, `GET /ai/providers/ollama/models`, `GET /ai/providers/ollama/status`, `POST /ai/providers/ollama/model`.
+- [x] **Automated Testing**: Created `tests/ollama.test.ts` (17 unit tests covering offline host simulation, model discovery, model switching, streaming, tool execution, RAG context injection, and failover).
+
 ---
 
 ## Live Endpoint Verification Matrix

@@ -53,3 +53,44 @@ export interface GenerateOptions {
   temperature?: number;
   maxTokens?: number;
 }
+
+export interface OllamaModelDetails {
+  parent_model?: string;
+  format?: string;
+  family?: string;
+  families?: string[];
+  parameter_size?: string;
+  quantization_level?: string;
+}
+
+export interface OllamaModelMetadata {
+  name: string;
+  model: string;
+  modifiedAt: string;
+  size: number;
+  digest: string;
+  details?: OllamaModelDetails;
+}
+
+export interface OllamaHealthStatus {
+  reachable: boolean;
+  enabled: boolean;
+  host: string;
+  version?: string;
+  status: 'HEALTHY' | 'DEGRADED' | 'OFFLINE';
+  activeModel: string;
+  installedModelsCount: number;
+  installedModels: string[];
+  latencyMs: number;
+  memoryUsageBytes?: number;
+  lastChecked: string;
+}
+
+export interface AIProviderStatus {
+  name: AIProviderName;
+  enabled: boolean;
+  reachable: boolean;
+  activeModel: string;
+  availableModels: string[];
+}
+
